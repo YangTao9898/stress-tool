@@ -1,0 +1,55 @@
+{{define "index"}}
+    <!DOCTYPE html>
+    <html>
+        <header>
+            <meta charset="UTF-8">
+            <title>压力测试工具</title>
+            <link rel="stylesheet" href="/web-template/lib/bootstrap.min.css">
+            <link rel="stylesheet" href="/web-template/css/common.css">
+            <script src="/web-template/lib/jquery.min.js"></script>
+            <script src="/web-template/lib/bootstrap.min.js"></script>
+            <script src="/web-template/js/globalDefine.js"></script>
+        </header>
+        <body>
+        <div style="margin: 20px">
+            <div role="navigation">
+                <ul class="nav nav-tabs" >
+                    <li role="presentation" id="createTaskBtn" class="active"><a href="#" onclick="showHidOther(1)">创建压测任务</a></li>
+                    <li role="presentation" id="showTaskBtn"><a href="#" onclick="showHidOther(2)">查看压测任务</a></li>
+                    <li role="presentation"><a href="#">Messages</a></li>
+                </ul>
+            </div>
+            <span id="createStressToolSpan">{{ template "createStressTool" . }}</span>
+            <span id="taskDescSpan">{{ template "taskDesc" . }}</span>
+        </div>
+        <div class="">
+        </div>
+        </body>
+        <script>
+            const createStressTool = 1
+            const taskDesc = 2
+            $(function () {
+                showHidOther(createStressTool)
+            })
+
+            var createStressToolSpanNode = $("#createStressToolSpan")
+            var taskDescSpanNode = $("#taskDescSpan")
+            function showHidOther(type) {
+                switch (type) {
+                    case createStressTool:
+                        $("#createTaskBtn").addClass("active")
+                        $("#showTaskBtn").removeClass("active")
+                        $("#createStressToolSpan").show()
+                        $("#taskDescSpan").hide()
+                        break
+                    case taskDesc:
+                        $("#showTaskBtn").addClass("active")
+                        $("#createTaskBtn").removeClass("active")
+                        $("#createStressToolSpan").hide()
+                        $("#taskDescSpan").show()
+                        break
+                }
+            }
+        </script>
+    </html>
+{{end}}

@@ -1,0 +1,442 @@
+{{define "createStressTool"}}
+    <!-- 创建测试任务 -->
+    <div>
+        <div style="display: inline-block; max-width: 40%">
+            <div class="input-group input-group-lg top-pad-1" >
+                <span class="input-group-addon">测试机器IP或域名<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="targetAddressErr">error</span>
+                <input type="text" class="form-control" id="targetAddress" aria-describedby="sizing-addon1">
+            </div>
+        </div>
+        <div class="left-margin-1" style="display: inline-block; max-width: 20%">
+            <div class="input-group input-group-lg top-pad-1">
+                <span class="input-group-addon" >测试机器端口<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="targetPortErr">error</span>
+                <input type="text" class="form-control" id="targetPort" aria-describedby="sizing-addon1">
+            </div>
+        </div>
+
+        <div class="left-margin-1" style="display: inline-block;">
+            <div class="input-group input-group-lg top-pad-1">
+                <button class="btn btn-default btn-lg" onclick="testConnected()">测试连通性</button>
+            </div>
+        </div>
+        <div class="input-group input-group-lg  top-pad-1">
+            <span class="input-group-addon">连接超时时间（ms）</span>
+            <span class="input-group-addon error hidden" id="timeoutErr">error</span>
+            <input type="text" class="form-control" id="timeout" aria-describedby="sizing-addon1">
+        </div>
+        <div class="input-group input-group-lg  top-pad-1">
+            <span class="input-group-addon">线程数<span class="must-fill">*</span></span>
+            <span class="input-group-addon error hidden" id="threadNumErr">error</span>
+            <input type="text" class="form-control" id="threadNum" aria-describedby="sizing-addon1">
+        </div>
+        <!-- 测试机返回值相关参数 -->
+        <div class="input-group input-group-lg top-pad-1  heigh-full">
+            <span class="input-group-addon">测试机是否有返回值</span>
+            <div class="heigh-full left-margin-1">
+                <span onclick="setResponseDetailHidden(false)">
+                    <input class="form-check-input middle heigh-full" style="margin: 0 0 0; transform: scale(1.4)"
+                           type="radio" name="hasResponseRadio" id="hasResponseRadio1" value="true">
+                    <label class="form-check-label text-center heigh-full" style="margin: 0 0 0; font-size: 16px; font-weight: normal"
+                           for="hasResponseRadio1">&nbsp;有&nbsp;</label>
+                </span>
+
+                <span onclick="setResponseDetailHidden(true)">
+                    <input class="form-check-input middle heigh-full" style="margin: 0 0 0; transform: scale(1.4)"
+                           type="radio" name="hasResponseRadio" id="hasResponseRadio2" value="false">
+                    <label class="form-check-label text-center heigh-full" style="margin: 0 0 0; font-size: 16px; font-weight: normal"
+                           for="hasResponseRadio2">&nbsp;无&nbsp;</label>
+                </span>
+            </div>
+        </div>
+        <span id="response-detail">
+            <div class="input-group input-group-lg  top-pad-1">
+                <span class="input-group-addon">读取超时时间（ms）<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="readTimeoutErr">error</span>
+                <input type="text" class="form-control" id="readTimeout" aria-describedby="sizing-addon1">
+            </div>
+            <div class="input-group input-group-lg  top-pad-1">
+                <span class="input-group-addon">期望返回字节数（byte）</span>
+                <span class="input-group-addon error hidden" id="expectedBytesErr">error</span>
+                <input type="text" class="form-control" id="expectedBytes" aria-describedby="sizing-addon1">
+            </div>
+        </span>
+        <!-- 重复发送的一些参数 -->
+        <div class="input-group input-group-lg  top-pad-1 heigh-full">
+            <span class="input-group-addon">是否重复发送</span>
+            <div class="heigh-full left-margin-1">
+                <span onclick="setRepeatSendDetailHidden(false)">
+                    <input class="form-check-input middle heigh-full" style="margin: 0 0 0; transform: scale(1.4)"
+                           type="radio" name="isRepeatSendRadio" id="isRepeatSendRadio1" value="true">
+                    <label class="form-check-label text-center heigh-full" style="margin: 0 0 0; font-size: 16px; font-weight: normal"
+                           for="isRepeatSendRadio1">&nbsp;是&nbsp;</label>
+                </span>
+
+                <span onclick="setRepeatSendDetailHidden(true)">
+                    <input class="form-check-input middle heigh-full" style="margin: 0 0 0; transform: scale(1.4)"
+                           type="radio" name="isRepeatSendRadio" id="isRepeatSendRadio2" value="false">
+                    <label class="form-check-label text-center heigh-full" style="margin: 0 0 0; font-size: 16px; font-weight: normal"
+                           for="isRepeatSendRadio2">&nbsp;否&nbsp;</label>
+                </span>
+            </div>
+        </div>
+        <span id="repeat-send-detail">
+            <div class="input-group input-group-lg  top-pad-1">
+                <span class="input-group-addon">重复发送次数<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="repeatTimeErr">error</span>
+                <input type="text" class="form-control" id="repeatTime" aria-describedby="sizing-addon1">
+            </div>
+            <div class="input-group input-group-lg  top-pad-1">
+                <span class="input-group-addon">重复发送间隔（ms）<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="intervalTimeErr">error</span>
+                <input type="text" class="form-control" id="intervalTime" aria-describedby="sizing-addon1">
+            </div>
+        </span>
+        <!-- 请求数据相关参数 -->
+        <div class="input-group input-group-lg top-pad-1">
+            <span class="input-group-addon">请求数据格式<span class="must-fill">*</span></span>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="addInputData()">添加数据</button>
+        </div>
+        <span id="input-data-parent">
+        </span>
+        <div class="input-group input-group-lg top-pad-1">
+            <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="createTask()">创建任务</button>
+        </div>
+    </div>
+    <script>
+        // 默认选有
+        $("#hasResponseRadio1").attr("checked", "checked");
+        $("#hasResponseRadio2").removeAttr("checked");
+        setResponseDetailHidden(false)
+
+        $("#isRepeatSendRadio1").attr("checked","checked");
+        $("#isRepeatSendRadio2").removeAttr("checked");
+        setRepeatSendDetailHidden(false)
+
+        function setResponseDetailHidden(isHidden) {
+            if (isHidden) {
+                $("#response-detail").hide(700)
+            } else {
+                $("#response-detail").show(700)
+            }
+        }
+
+        function setRepeatSendDetailHidden(isHidden) {
+            if (isHidden) {
+                $("#repeat-send-detail").hide(700)
+            } else {
+                $("#repeat-send-detail").show(700)
+            }
+        }
+
+        function getInputDataElement() {
+            return `\
+                <div class="input-data-top">\
+                    <input type="hidden" class="input-data-type">\
+                    <div style="display: inline-block; max-width: 30%">\
+                        <div class="input-group input-group-lg top-pad-1">\
+                            <!-- 类型按钮 -->\
+                            <div class="btn-group" style="float: left;">\
+                                <button type="button" class="btn btn-default dropdown-toggle btn-lg" data-toggle="dropdown"\
+                                    aria-haspopup="true" aria-expanded="false"  style="width: 160px;">\
+                                    <span class="dropdown-toggle-text">定义数据类型</span> <span class="caret"></span>\
+                                </button>\
+                                <ul class="dropdown-menu">\
+                                    <li><a onclick="inputDataIntChose(this)">Int数据</a></li>\
+                                    <li><a onclick="inputDataFloatChose(this)">Float数据</a></li>\
+                                    <li><a onclick="inputDataStringChose(this)">字符串数据</a></li>\
+                                    <li role="separator" class="divider"></li>\
+                                    <li><a >取消</a></li>\
+                                </ul>\
+                            </div>\
+                            <!-- 类型长度 -->\
+                            <span class="input-group-addon left-margin-1" style="float:left; width: 150px">长度（byte）<span class="must-fill">*</span></span>\
+                            <input type="text" class="form-control input-data-length" style="width: 150px; float: left" name="Data" aria-describedby="sizing-addon1">\
+                        </div>\
+                    </div>\
+                    <div style="display: inline-block; max-width: 50%">\
+                        <div class="input-group input-group-lg top-pad-1">\
+                            <!-- 数据 -->\
+                            <span class="input-group-addon left-margin-1">数据<span class="must-fill">*</span></span>\
+                            <input type="text" class="form-control input-data-data" name="Data" aria-describedby="sizing-addon1">\
+                        </div>\
+                    </div>\
+                    <div style="display: inline-block; max-width: 10%">\
+                        <div class="input-group input-group-lg top-pad-1">\
+                            <!-- 数据 -->\
+                            <button style="display: inline-block;"\
+                                class="btn btn-default btn-lg" onclick="deleteElement(this)">删除</button>\
+                        </div>\
+                    </div>\
+                </div>`
+        }
+
+        function addInputData() {
+            var inputDataHTML = getInputDataElement()
+            //$("#input-data-parent").html($("#input-data-parent").html() + inputDataHTML)
+            $("#input-data-parent").append($(inputDataHTML))
+        }
+
+        function deleteElement(obj) {
+            $(obj.parentNode.parentNode.parentNode).remove()
+        }
+
+        function hidTestConnectedErr() {
+            $("#targetAddressErr").addClass("hidden")
+            $("#targetPortErr").addClass("hidden")
+        }
+
+        function testConnected() {
+            hidTestConnectedErr()
+            var address = $("#targetAddress").val()
+            var port = $("#targetPort").val()
+
+            $.loadingStart()
+            $.ajax({
+                url: "/TestConnectivity",
+                type: "POST",
+                data: JSON.stringify({
+                    "targetAddress": address,
+                    "targetPort": port
+                }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        var strs = data.resultCode.split(",")
+                        for (var i = 0, len = strs.length; i < len; i++) {
+                            if (strs[i] == "1001") {
+                                $("#targetAddressErr").text("不能为空")
+                                $("#targetAddressErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1002") {
+                                $("#targetPortErr").text("不能为空")
+                                $("#targetPortErr").removeClass("hidden")
+                            }
+                        }
+                        return
+                    }
+                    data = data.data
+                    $.showAlertBox(data.result ? "成功": "失败", data.msg, data.result == false)
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
+        }
+
+        function inputDataIntChose(obj) {
+            var p = $(obj).parents(".input-data-top")[0]
+            var inputLength = $(p).find(".input-data-length")[0]
+            $(inputLength).attr("placeholder", "只能为1,2,4,8")
+            $(inputLength).val("")
+            $(inputLength).removeAttr("disabled")
+            var inputType = $(p).children(".input-data-type")[0]
+            $(inputType).val("0")
+            $(p).find(".dropdown-toggle-text")[0].innerText = "Int数据"
+            //var inputData = $(p).find(".input-data-data")[0]
+            //$(inputData).unbind('input', computeBytes)
+        }
+
+        function inputDataFloatChose(obj) {
+            var p = $(obj).parents(".input-data-top")[0]
+            var inputLength = $(p).find(".input-data-length")[0]
+            $(inputLength).attr("placeholder", "只能为4,8")
+            $(inputLength).val("")
+            $(inputLength).removeAttr("disabled")
+            var inputType = $(p).children(".input-data-type")[0]
+            $(inputType).val("1")
+            $(p).find(".dropdown-toggle-text")[0].innerText = "Float数据"
+            //var inputData = $(p).find(".input-data-data")[0]
+            //$(inputData).unbind('input', computeBytes)
+        }
+
+        /*function computeBytes(event) {
+            var objlength = event.data.inputLength
+            var objdata = event.data.inputData
+            var data = $(objdata).val()
+
+            for (var i = 0; i < data.length; i++) {
+                console.log(data.charCodeAt(i))
+            }
+            //console.log(atob(data))
+            $(objlength).val()
+        }*/
+        function inputDataStringChose(obj) {
+            var p = $(obj).parents(".input-data-top")[0]
+            var inputLength = $(p).find(".input-data-length")[0]
+            $(inputLength).attr("placeholder", "将会自动补充")
+            $(inputLength).val("")
+            $(inputLength).attr("disabled", "")
+            var inputType = $(p).children(".input-data-type")[0]
+            $(inputType).val("2")
+            $(p).find(".dropdown-toggle-text")[0].innerText = "字符串数据"
+            //var inputData = $(p).find(".input-data-data")[0]
+            //$(inputData).bind('input', {inputLength: inputLength, inputData: inputData}, computeBytes)
+        }
+
+        function clearAllErr() {
+            $("#targetAddressErr").addClass("hidden")
+            $("#targetPortErr").addClass("hidden")
+            $("#timeoutErr").addClass("hidden")
+            $("#readTimeoutErr").addClass("hidden")
+            $("#expectedBytesErr").addClass("hidden")
+            $("#threadNumErr").addClass("hidden")
+            $("#repeatTimeErr").addClass("hidden")
+            $("#intervalTimeErr").addClass("hidden")
+        }
+        function createTask() {
+            clearAllErr()
+            // 读取数据
+            var targetAddress = $("#targetAddress").val()
+            var targetPort = $("#targetPort").val()
+            var timeout = $("#timeout").val()
+            var threadNum = $("#threadNum").val()
+
+            var hasResponse = $('input[name="hasResponseRadio"]:checked').val() == "true"
+            var readTimeout = $("#readTimeout").val()
+            var expectedBytes = $("#expectedBytes").val()
+
+            var isRepeatSend = $('input[name="isRepeatSendRadio"]:checked').val() == "true"
+            var repeatTime = $("#repeatTime").val()
+            var intervalTime = $("#intervalTime").val()
+
+            var inputDataMap = []
+            var inputDataParent = $("#input-data-parent")
+            var inputDataArr = $(inputDataParent).children(".input-data-top")
+            for (var i = 0; i < inputDataArr.length; i++) {
+                var node = inputDataArr[i]
+                var type = $(node).children(".input-data-type")[0].value
+                var inputLength = $(node).find(".input-data-length")[0].value
+                var inputData = $(node).find(".input-data-data")[0].value
+                var obj = {}
+                if (type == "") {
+                    $.showAlertBox("请检查", "数据类型不能为空", true)
+                    return
+                }
+                if (inputLength == "" && type != "2") {
+                    $.showAlertBox("请检查", "数据长度不能为空", true)
+                    return
+                }
+                if (inputData == "") {
+                    $.showAlertBox("请检查", "数据不能为空", true)
+                    return
+                }
+
+                obj.type = type
+                obj.length = inputLength
+                obj.data = inputData
+                inputDataMap.push(obj)
+            }
+
+            $.loadingStart()
+            $.ajax({
+                url: "/CreateTask",
+                type: "POST",
+                data: JSON.stringify({
+                    "targetAddress": targetAddress,
+                    "targetPort": targetPort,
+                    "timeout": timeout,
+                    "threadNum": threadNum,
+                    "hasResponse": hasResponse,
+                    "readTimeout": readTimeout,
+                    "expectedBytes": expectedBytes,
+                    "isRepeat": isRepeatSend,
+                    "repeatTime": repeatTime,
+                    "intervalTime": intervalTime,
+                    "dataMapArr": inputDataMap
+                }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        var strs = data.resultCode.split(",")
+                        for (var i = 0, len = strs.length; i < len; i++) {
+                            if (strs[i] == "1001") {
+                                $("#targetAddressErr").text("不能为空")
+                                $("#targetAddressErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1002") {
+                                $("#targetPortErr").text("不能为空")
+                                $("#targetPortErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1003") {
+                                $("#timeoutErr").text("非法字符或数字超出范围")
+                                $("#timeoutErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1004") {
+                                $("#readTimeoutErr").text("不能为空")
+                                $("#readTimeoutErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1005") {
+                                $("#readTimeoutErr").text("非法字符或数字超出范围")
+                                $("#readTimeoutErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1006") {
+                                $("#expectedBytesErr").text("不能为空")
+                                $("#expectedBytesErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1007") {
+                                $("#expectedBytesErr").text("非法字符或数字超出范围")
+                                $("#expectedBytesErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1008") {
+                                $("#threadNumErr").text("不能为空")
+                                $("#threadNumErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1009") {
+                                $("#threadNumErr").text("非法字符或数字超出范围")
+                                $("#threadNumErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1010") {
+                                $("#repeatTimeErr").text("不能为空")
+                                $("#repeatTimeErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1011") {
+                                $("#repeatTimeErr").text("非法字符或数字超出范围")
+                                $("#repeatTimeErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1012") {
+                                $("#intervalTimeErr").text("不能为空")
+                                $("#intervalTimeErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1013") {
+                                $("#intervalTimeErr").text("非法字符或数字超出范围")
+                                $("#intervalTimeErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1020") {
+                                $.showAlertBox("错误", "数据长度有非法字符", true)
+                            }
+                            if (strs[i] == "1030" || strs[i] == "1031" || strs[i] == "1032" || strs[i] == "1033") {
+                                $.showAlertBox("错误", "数据为Int类型时，数据含有非法字符或值溢出", true)
+                            }
+                            if (strs[i] == "1040") {
+                                $.showAlertBox("错误", "数据为Int类型时，数据长度只能为1，2，4，8", true)
+                            }
+                            if (strs[i] == "1050" || strs[i] == "1051") {
+                                $.showAlertBox("错误", "数据为Float类型时，数据含有非法字符或值溢出", true)
+                            }
+                            if (strs[i] == "1060") {
+                                $.showAlertBox("错误", "数据为Float类型时，数据长度只能为4，8", true)
+                            }
+                            if (strs[i] == "1080") {
+                                $.showAlertBox("错误", "未定义的数据类型，请联系管理员", true)
+                            }
+                        }
+                        return
+                    }
+                    data = data.data
+                    $.showAlertBox("成功", data, false)
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
+        }
+    </script>
+{{end}}

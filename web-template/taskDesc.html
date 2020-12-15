@@ -1,0 +1,52 @@
+{{define "taskDesc"}}
+    <div>
+        <div class="list-group">
+            <a href="#" class="list-group-item list-group-item-action">Dapibus ac facilisis in</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-primary">A simple primary list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-secondary">A simple secondary list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-success">A simple success list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-danger">A simple danger list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-warning">A simple warning list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-info">A simple info list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-light">A simple light list group item</a>
+            <a href="#" class="list-group-item list-group-item-action list-group-item-dark">A simple dark list group item</a>
+        </div>
+    </div>
+    <script>
+        $(function () {
+            /*$.loadingStart()
+            $.ajax({
+                url: "/GetAllTaskDesc",
+                type: "POST",
+                data: JSON.stringify({
+                    "state": -1,
+                }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        var strs = data.resultCode.split(",")
+                        for (var i = 0, len = strs.length; i < len; i++) {
+                            if (strs[i] == "1001") {
+                                $("#targetAddressErr").text("不能为空")
+                                $("#targetAddressErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1002") {
+                                $("#targetPortErr").text("不能为空")
+                                $("#targetPortErr").removeClass("hidden")
+                            }
+                        }
+                        return
+                    }
+                    data = data.data
+                    $.showAlertBox(data.result ? "成功": "失败", data.msg, data.result == false)
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })*/
+        })
+    </script>
+{{end}}
