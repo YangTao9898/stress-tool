@@ -1,9 +1,9 @@
 package model
 
 const ( // 发送的数据类型
-	NUMBER  = "0"
-	FLOAT   = "1"
-	STRING  = "2"
+	NUMBER  = 0
+	FLOAT   = 1
+	STRING  = 2
 )
 type CreateTaskData struct {
 	TargetAddress string         `json:"targetAddress"` // ip 或域名
@@ -17,9 +17,10 @@ type CreateTaskData struct {
 	IntervalTime  int            `json:"intervalTime"`  // 重复发送间隔时间，单位毫秒，为0则不间断发送
 	HasResponse   bool           `json:"hasResponse"`   // 是否有返回值
 	/*	NUMBER     = 0 FLOAT   = 1 STRING  = 2
-		数据类型 key 为数据索引范围，value 为数据类型，如上枚举所叙述，key:0~3 value:0 key:4~15 value:2 则表示前四个字节是NUMBER，后12个字节为string
+	*	数据类型 key 为数据索引范围，value 为数据类型，如上枚举所叙述，key:0~3 value:0 key:4~15 value:2 则表示前四个字节是NUMBER，后12个字节为string
+	*   为了使之有序，每一个元素用一个map来装，形成一个字典数组
 	*/
-	//DataTypeMap   map[string]int `json:"dataTypeMap"`
+	DataTypeMap   []map[string]int `json:"dataTypeMap"`
 	Data          []byte         `json:"data"`          // 请求数据
 }
 const ( // 任务状态
@@ -45,7 +46,7 @@ type TaskDealData struct {
 	SuccTransactions           int     `json:"succTransactions"` // 请求成功数
 	FailTransactions           int     `json:"failTransactions"` // 请求失败数
 	TimeOutTransactions        int     `json:"timeOutTransactions"` // 请求超时数
-	DataTransferred            float64 `json:"dataTransferred"` // 总传输数据量
+	DataTransferred            int     `json:"dataTransferred"` // 总传输数据量
 	Throughput                 float64 `json:"throughput"` // 每秒钟传输的数据量，吞吐量
 	TotalCostTime              float64 `json:"totalCostTime"` // 不算失败数，总花费时间 ms
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"net"
 )
@@ -59,8 +61,12 @@ func main() {
 	/*dataInt, err := strconv.ParseFloat("256", 10)
 	fmt.Println(err)
 	fmt.Println(dataInt)*/
-	s1 := []string{"123"}
+	/*s1 := []string{"123"}
 	s2 := []string{"334", "556"}
 	s1 = append(s1, s2...)
-	fmt.Println(s1)
+	fmt.Println(s1)*/
+	var a int64 = 1
+	buf := bytes.NewBuffer([]byte{})
+	binary.Write(buf, binary.BigEndian, a)
+	fmt.Println(buf.Len(), buf.Bytes())
 }

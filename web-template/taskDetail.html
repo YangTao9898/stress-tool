@@ -1,0 +1,191 @@
+{{define "taskDetail"}}
+    <div>
+        <div>
+            <div class="modal-backdrop show" style="opacity:.5; z-index: 1" onclick="hidTaskDetail()">
+            </div>
+            <div style="position: fixed; top: 0; left: 0; right: 0;width: 60%; margin: 20px auto; background-color: whitesmoke; border-radius: 7px; z-index: 2;">
+                <div style="display: flex; justify-content: space-around;">
+                    <div style="width: 49%; height: 100%; padding: 0 0 10px 5px;">
+                        <table class="table">
+                            <caption>压测参数</caption>
+                            <tbody>
+                            <tr>
+                                <td>测试机器IP或域名</td>
+                                <td>Bangalore</td>
+                            </tr>
+                            <tr>
+                                <td>测试机器端口</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>连接超时时间（ms）</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>线程数</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>测试机是否有返回值</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>读取超时时间（ms）</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>期望返回字节数（byte）</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>是否重复发送</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>重复发送次数</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            <tr>
+                                <td>重复发送间隔（ms）</td>
+                                <td>Mumbai</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <table class="table">
+                            <caption>请求数据</caption>
+                            <thead>
+                            <tr>
+                                <td>类型</td>
+                                <td>长度</td>
+                                <td>数据</td>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>int</td>
+                                <td>4</td>
+                                <td>122</td>
+                            </tr>
+                            <tr>
+                                <td>string</td>
+                                <td>4</td>
+                                <td>ssss</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="width: 49%; height: 100%; padding: 0 5px 10px 0;">
+                        <table class="table">
+                            <caption>压测结果</caption>
+                            <tbody>
+                            <tr>
+                                <td>任务标识</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>运行状态</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>开始时间</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>结束时间</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>请求总次数</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求花费的平均时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求花费的最大时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求花费的最小时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求响应的平均时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求最大响应时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单次请求最小响应时间（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>每秒处理请求</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>请求成功数</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>请求失败数</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>请求超时数</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>总传输数据量</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>每秒钟传输的数据量</td>
+                                <td>ssss</td>
+                            </tr>
+                            <tr>
+                                <td>花费总时间，不计失败数（ms）</td>
+                                <td>ssss</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right; background-color: #C6F089;">开始执行</button>
+                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right;" onclick="hidTaskDetail()">返回</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function hidTaskDetail() {
+            $("#taskDetailParent").hide()
+        }
+        function getTaskDetail(taskId) {
+            $.loadingStart()
+            $.ajax({
+                url: "/GetTaskDetail",
+                type: "POST",
+                data: JSON.stringify({
+                    "taskId": taskId,
+                }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function (data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        return
+                    }
+                    data = data.data
+
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
+        }
+    </script>
+{{end}}

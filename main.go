@@ -51,6 +51,10 @@ func main() {
 	// 界面
 	router.LoadHTMLGlob("web-template/*.html")
 
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index", gin.H{})
+	})
+
 	router.GET("/index.html", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index", gin.H{})
 	})

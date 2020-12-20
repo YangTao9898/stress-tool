@@ -9,15 +9,23 @@ import (
 	"time"
 )
 
-var testValues []map[string]int
+var testValues [][]map[string]int
 var testResult []bool
 
-/*func addTestItem(dataTypeMap map[string]int, result bool) {
-	testValues = append(testValues, dataTypeMap)
+func addTestItem(dataTypeMap map[string]int, result bool) {
+	arr := make([]map[string]int, len(dataTypeMap))
+	index := 0
+	for k, v := range dataTypeMap {
+		m := make(map[string]int, 1)
+		m[k] = v
+		arr[index] = m
+		index++
+	}
+	testValues = append(testValues, arr)
 	testResult = append(testResult, result)
-}*/
+}
 
-/*func TestCheckDataRangeIsContinuous(t *testing.T) {
+func TestCheckDataRangeIsContinuous(t *testing.T) {
 	addTestItem(map[string]int{
 		"0~3": model.STRING,
 		"4~12": model.STRING,
@@ -88,7 +96,7 @@ var testResult []bool
 			t.Errorf("TestCheckDataRangeIsContinuous fail")
 		}
 	}
-}*/
+}
 
 func TestCreateTask(t *testing.T) {
 	data := model.CreateTaskData{
@@ -100,11 +108,11 @@ func TestCreateTask(t *testing.T) {
 		RepeatTime:   0,
 		IntervalTime: 0,
 		HasResponse:  true,
-		/*DataTypeMap:  map[string]int{
-			"0~3": model.STRING,
-			"4~5": model.STRING,
-			"6~7": model.STRING,
-		},*/
+		DataTypeMap:  []map[string]int{
+			{"0~3": model.STRING},
+			{"4~5": model.STRING},
+			{"6~7": model.STRING},
+		},
 		Data:         []byte{0, 0, 0, 0, 0, 0, 0, 0},
 	}
 	_, err := CreateTask(data)
@@ -121,11 +129,11 @@ func TestCreateTask(t *testing.T) {
 		RepeatTime:   0,
 		IntervalTime: 0,
 		HasResponse:  true,
-		/*DataTypeMap:  map[string]int{
-			"0~3": model.STRING,
-			"4~5": model.STRING,
-			"6~7": model.STRING,
-		},*/
+		DataTypeMap:  []map[string]int{
+			{"0~3": model.STRING},
+			{"4~5": model.STRING},
+			{"6~7": model.STRING},
+		},
 		Data:         []byte{0, 0, 0, 0, 0, 0, 0, 0, 0}, // 数据多一位
 	}
 	_, err = CreateTask(data)
@@ -199,7 +207,7 @@ func TestStartSingleThread(t *testing.T) {
 		RepeatTime:     0,
 		IntervalTime:   0,
 		HasResponse:    true,
-		//DataTypeMap:    nil,
+		DataTypeMap:    nil,
 		Data:           []byte(clientSend),
 	}
 
@@ -289,9 +297,9 @@ func TestStartTask(t *testing.T) {
 		RepeatTime:     repeatCount,
 		IntervalTime:   0,
 		HasResponse:    true,
-		/*DataTypeMap:    map[string]int{
-			"0~999999": 2,
-		},*/
+		DataTypeMap:    []map[string]int{
+			{"0~999999": 2},
+		},
 		Data:           []byte(clientSend),
 	}
 
@@ -332,9 +340,9 @@ func TestConvertTaskDealDataToJson(t *testing.T) {
 		RepeatTime:     0,
 		IntervalTime:   0,
 		HasResponse:    true,
-		/*DataTypeMap:    map[string]int{
-			"0~999999": 2,
-		},*/
+		DataTypeMap:    []map[string]int{
+			{"0~999999": 2},
+		},
 		Data:           []byte("xxxxxxxxxx"),
 	}
 	td := model.TaskDealData{

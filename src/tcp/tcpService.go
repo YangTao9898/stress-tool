@@ -5,8 +5,11 @@ import (
 	"errors"
 	go_logger "github.com/phachon/go-logger"
 	"net"
+	"sort"
+	"strconv"
 	"stress-tool/comon/util"
 	"stress-tool/model"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,10 +38,18 @@ func init() {
 
 // 检查数据范围是否连续
 // return: int 为范围最大值 string 为返回的错误信息
-/*func CheckDataRangeIsContinuous(m map[string]int) (int, string) {
+func CheckDataRangeIsContinuous(mArr []map[string]int) (int, string) {
 	rangelistMap  := make(map[int][2]int)
-	var l []int = make([]int, len(m))
+	var l []int = make([]int, len(mArr))
 	index := 0
+
+	m := make(map[string]int, len(mArr))
+	// 合并多个Map
+	for _, v := range mArr {
+		for k, o := range v {
+			m[k] = o
+		}
+	}
 	for key, value := range m {
 		nums := strings.Split(key, "~")
 		if len(nums) != 2{
@@ -88,26 +99,26 @@ func init() {
 	}
 	// 取出索引范围内最大的值, 加 1 得到数据长度
 	return rangelistMap[l[len(l) - 1]][1] + 1, ""
-}*/
+}
 
 func checkCreateTaskData(data model.CreateTaskData) string {
 	if data.ThreadNum <= 0 {
 		return "线程数不能小于等于0"
 	}
-	/*if data.DataTypeMap == nil {
+	if data.DataTypeMap == nil {
 		return "请求数据类型不能为空"
-	}*/
+	}
 	if data.HasResponse && data.ReadTimeout <= 0 {
 		return "读取超时时间必须大于0"
 	}
 
-	/*length, msg := CheckDataRangeIsContinuous(data.DataTypeMap)
+	length, msg := CheckDataRangeIsContinuous(data.DataTypeMap)
 	if msg != "" {
 		return msg
 	}
 	if len(data.Data) > length {
 		return "定义的数据长度小于实际的数据长度"
-	}*/
+	}
 	if data.IsRepeat {
 		if data.RepeatTime <= 0 {
 			return "重复请求次数须大于0"
@@ -397,7 +408,7 @@ func StartTask(taskId string) error {
 	v.SuccTransactions = totalCData.succCount
 	v.FailTransactions = totalCData.failCount
 	v.TimeOutTransactions = totalCData.timeoutCount
-	v.DataTransferred = float64(totalCData.reciveDataSize + totalCData.sendDataSize)
+	v.DataTransferred = totalCData.reciveDataSize + totalCData.sendDataSize
 	v.TotalCostTime = totalCData.totalCostTime
 	v.State = model.FINISH
 

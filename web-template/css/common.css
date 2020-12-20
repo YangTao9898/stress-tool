@@ -9,6 +9,7 @@
 .width-1 { width: 10px }
 .heigh-full { height: 100% }
 .middle { float: none; display: inline-block; vertical-align: middle; }
+.pointer { cursor: pointer; }
 
 .loader-05 {
     display: inline-block;

@@ -1,20 +1,48 @@
 {{define "taskDesc"}}
     <div>
-        <div class="list-group">
-            <a href="#" class="list-group-item list-group-item-action">Dapibus ac facilisis in</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-primary">A simple primary list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-secondary">A simple secondary list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-success">A simple success list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-danger">A simple danger list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-warning">A simple warning list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-info">A simple info list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-light">A simple light list group item</a>
-            <a href="#" class="list-group-item list-group-item-action list-group-item-dark">A simple dark list group item</a>
+        <div class="list-group" id="task-desc-list">
         </div>
+        <span id="taskDetailParent">
+            {{template "taskDetail" .}}
+        </span>
     </div>
     <script>
         $(function () {
-            /*$.loadingStart()
+            $("#taskDetailParent").hide()
+        })
+
+        const notStart = 0
+        const ready = 1
+        const running = 2
+        const finish = 3
+        function addTaskNode(state, innerHtml, taskId) {
+            var addClass = ""
+            switch (state) {
+                case notStart:
+                    addClass = "list-group-item-warning"
+                    break
+                case ready:
+                    addClass = "list-group-item-info"
+                    break
+                case running:
+                    addClass = "list-group-item-danger"
+                    break
+                case finish:
+                    addClass = "list-group-item-success"
+                    break
+            }
+            var node =
+                '<div class="task-desc-node top-pad-1">' +
+                '   <a href="#" class="list-group-item list-group-item-action ' + addClass + '">' +
+                        innerHtml + '<button class="btn btn-default" onclick="getTaskDetail(' + taskId + ')">查看详情</button></a>' +
+                '   <input type="hidden" value="' + taskId + '">' +
+                '</div>'
+            $("#task-desc-list").append($(node))
+        }
+
+        function GetAllTaskDesc() {
+            $("#task-desc-list").html("")
+            $.loadingStart()
             $.ajax({
                 url: "/GetAllTaskDesc",
                 type: "POST",
@@ -26,27 +54,45 @@
                 success: function(data) {
                     $.loadingEnd()
                     if ($.checkResultErr(data)) {
-                        var strs = data.resultCode.split(",")
-                        for (var i = 0, len = strs.length; i < len; i++) {
-                            if (strs[i] == "1001") {
-                                $("#targetAddressErr").text("不能为空")
-                                $("#targetAddressErr").removeClass("hidden")
-                            }
-                            if (strs[i] == "1002") {
-                                $("#targetPortErr").text("不能为空")
-                                $("#targetPortErr").removeClass("hidden")
-                            }
-                        }
                         return
                     }
                     data = data.data
-                    $.showAlertBox(data.result ? "成功": "失败", data.msg, data.result == false)
+                    if (data != null) {
+                        for (var i = 0; i < data.length; i++) {
+                            stateDesc = ""
+                            switch (data[i].state) {
+                                case notStart:
+                                    stateDesc = "未执行"
+                                    break
+                                case ready:
+                                    stateDesc = "等待执行"
+                                    break
+                                case running:
+                                    stateDesc = "正在执行"
+                                    break
+                                case finish:
+                                    stateDesc = "执行完毕"
+                                    break
+                            }
+                            timeInfo = ""
+                            if (data[i].state > ready) {
+                                timeInfo = " &nbsp;&nbsp;执行开始时间: " + data[i].startTime + " &nbsp;&nbsp;执行结束时间: " + data[i].endTime
+                            }
+                            var desc = "<div style='display: inline-block; width: 50%;'>任务id: " + data[i].taskId + " &nbsp;&nbsp;地址: " + data[i].targetAddress + " &nbsp;&nbsp;端口: " + data[i].targetPort + timeInfo +
+                                    " &nbsp;&nbsp;执行状态: " + stateDesc + "</div>"
+                            addTaskNode(data[i].state, desc, data[i].taskId)
+                        }
+                    }
                 },
                 error: function (err) {
                     $.loadingEnd()
                     $.showRequestErr(err)
                 }
-            })*/
-        })
+            })
+        }
+        
+        function getTaskDetail(taskId) {
+            $("#taskDetailParent").show()
+        }
     </script>
 {{end}}

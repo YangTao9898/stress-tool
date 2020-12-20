@@ -57,7 +57,7 @@
                 <input type="text" class="form-control" id="readTimeout" aria-describedby="sizing-addon1">
             </div>
             <div class="input-group input-group-lg  top-pad-1">
-                <span class="input-group-addon">期望返回字节数（byte）</span>
+                <span class="input-group-addon">期望返回字节数（Byte）</span>
                 <span class="input-group-addon error hidden" id="expectedBytesErr">error</span>
                 <input type="text" class="form-control" id="expectedBytes" aria-describedby="sizing-addon1">
             </div>
@@ -162,7 +162,16 @@
                             <input type="text" class="form-control input-data-data" name="Data" aria-describedby="sizing-addon1">\
                         </div>\
                     </div>\
-                    <div style="display: inline-block; max-width: 10%">\
+                    <!-- 大小端 -->\
+                    <div style="display: inline-block;" class="left-margin-2 input-data-num-end-parent">\
+                        <div class="input-group input-group-lg top-pad-1" style="height: 46px; font-size: 18px;">\
+                            <input type="checkbox" class="pointer input-data-num-end" id="inputDataNumEnd"
+                                onclick="inputDataNumEndClick(this)" checked>\
+                            <label class="pointer input-data-num-end-label" style="margin-left: 5px; font-weight: normal;" for="inputDataNumEnd"
+                                onclick="inputDataNumEndClick(this)">大端</label>\
+                        </div>\
+                    </div>\
+                    <div style="display: inline-block; max-width: 10%" class="left-margin-2">\
                         <div class="input-group input-group-lg top-pad-1">\
                             <!-- 数据 -->\
                             <button style="display: inline-block;"\
@@ -237,8 +246,12 @@
             var inputType = $(p).children(".input-data-type")[0]
             $(inputType).val("0")
             $(p).find(".dropdown-toggle-text")[0].innerText = "Int数据"
-            //var inputData = $(p).find(".input-data-data")[0]
+            // 大小端复选框
+            $(p).find(".input-data-num-end-parent").removeClass("hidden")
+
+            var inputData = $(p).find(".input-data-data")[0]
             //$(inputData).unbind('input', computeBytes)
+            $(inputData).unbind('input')
         }
 
         function inputDataFloatChose(obj) {
@@ -250,8 +263,18 @@
             var inputType = $(p).children(".input-data-type")[0]
             $(inputType).val("1")
             $(p).find(".dropdown-toggle-text")[0].innerText = "Float数据"
-            //var inputData = $(p).find(".input-data-data")[0]
+            // 大小端复选框
+            $(p).find(".input-data-num-end-parent").removeClass("hidden")
+
+            var inputData = $(p).find(".input-data-data")[0]
             //$(inputData).unbind('input', computeBytes)
+            $(inputData).unbind('blur')
+        }
+
+        function inputDataNumEndClick(obj) {
+            var parent = $(obj).parent()
+            var checkbox = $(parent).find(".input-data-num-end")
+            $(parent).find(".input-data-num-end-label").text($(checkbox).is(":checked") ? "大端" : "小端")
         }
 
         /*function computeBytes(event) {
@@ -274,8 +297,28 @@
             var inputType = $(p).children(".input-data-type")[0]
             $(inputType).val("2")
             $(p).find(".dropdown-toggle-text")[0].innerText = "字符串数据"
-            //var inputData = $(p).find(".input-data-data")[0]
-            //$(inputData).bind('input', {inputLength: inputLength, inputData: inputData}, computeBytes)
+            // 大小端复选框
+            $(p).find(".input-data-num-end-parent").addClass("hidden")
+
+            var inputData = $(p).find(".input-data-data")[0]
+            var lastValue = inputData.value
+            $(inputData).bind('blur', function () {
+                // input值未变时，不发送请求
+                if (lastValue != inputData.value) {
+                    lastValue = inputData.value
+                    $.ajax({
+                        url: "/GetStrBytes",
+                        type: "POST",
+                        data: inputData.value,
+                        success: function(data) {
+                            $(inputLength).val(data)
+                        },
+                        error: function (err) {
+                            $.showRequestErr(err)
+                        }
+                    })
+                }
+            })
         }
 
         function clearAllErr() {
@@ -312,6 +355,7 @@
                 var type = $(node).children(".input-data-type")[0].value
                 var inputLength = $(node).find(".input-data-length")[0].value
                 var inputData = $(node).find(".input-data-data")[0].value
+                var isBigEnd = $(node).find(".input-data-num-end")[0].checked
                 var obj = {}
                 if (type == "") {
                     $.showAlertBox("请检查", "数据类型不能为空", true)
@@ -329,6 +373,7 @@
                 obj.type = type
                 obj.length = inputLength
                 obj.data = inputData
+                obj.isBigEnd = isBigEnd
                 inputDataMap.push(obj)
             }
 
@@ -407,6 +452,9 @@
                             if (strs[i] == "1013") {
                                 $("#intervalTimeErr").text("非法字符或数字超出范围")
                                 $("#intervalTimeErr").removeClass("hidden")
+                            }
+                            if (strs[i] == "1019") {
+                                $.showAlertBox("错误", "请求数据不能为空，请至少添加一条请求数据", true)
                             }
                             if (strs[i] == "1020") {
                                 $.showAlertBox("错误", "数据长度有非法字符", true)
