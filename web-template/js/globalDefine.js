@@ -1,3 +1,6 @@
+// taskDetail 导出专用变量
+var TaskDetal = {}
+
 var alertBoxCallBackFunc = null
 $.alertBoxCallback = function () {
     if (alertBoxCallBackFunc != null) {

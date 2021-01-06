@@ -4,43 +4,44 @@ import (
 	"encoding/json"
 	"errors"
 	go_logger "github.com/phachon/go-logger"
+	"golang.org/x/tools/container/intsets"
 	"net"
 	"sort"
 	"strconv"
 	"stress-tool/comon/util"
 	"stress-tool/model"
-	"strings"
 	"sync"
 	"time"
 )
 
 const default_read_buf_size int = 1024
 
-var taskMap map[string]*model.TaskDealData
+var taskMap map[string]*model.TaskDealData // 供查找用
+var taskMapArr []*model.TaskDealData       // 供排序用
 var dataIntLength map[int]bool
 var dataFloatLength map[int]bool
 var log *go_logger.Logger
 
 func init() {
+	log = util.GetLogger()
 	taskMap = make(map[string]*model.TaskDealData)
-	dataIntLength = map[int]bool {
+	dataIntLength = map[int]bool{
 		1: true,
 		2: true,
 		4: true,
 		8: true,
 	}
-	dataFloatLength = map[int]bool {
+	dataFloatLength = map[int]bool{
 		4: true,
 		8: true,
 	}
 }
 
-
 // 检查数据范围是否连续
 // return: int 为范围最大值 string 为返回的错误信息
 func CheckDataRangeIsContinuous(mArr []map[string]int) (int, string) {
-	rangelistMap  := make(map[int][2]int)
-	var l []int = make([]int, len(mArr))
+	rangelistMap := make(map[int][2]int)
+	var L = make([]int, len(mArr))
 	index := 0
 
 	m := make(map[string]int, len(mArr))
@@ -51,17 +52,11 @@ func CheckDataRangeIsContinuous(mArr []map[string]int) (int, string) {
 		}
 	}
 	for key, value := range m {
-		nums := strings.Split(key, "~")
-		if len(nums) != 2{
-			return -1, "数据范围须遵循 0~4 格式"
+		n1, n2, err := model.CreateTaskDataKeySplite(key)
+		if err != nil {
+			return -1, err.Error()
 		}
-		var arr [2]int
-		var err1, err2 error
-		arr[0], err1 = strconv.Atoi(nums[0])
-		arr[1], err2 = strconv.Atoi(nums[1])
-		if err1 != nil || err2 != nil {
-			return -1, "数据范围须遵循 0~4 格式"
-		}
+		arr := [2]int{n1, n2}
 		if arr[0] > arr[1] {
 			return -1, "数据范围开始索引不能大于结束索引"
 		}
@@ -77,28 +72,28 @@ func CheckDataRangeIsContinuous(mArr []map[string]int) (int, string) {
 		}
 
 		rangelistMap[arr[0]] = arr
-		l[index] = arr[0]
+		L[index] = arr[0]
 		index++
 	}
 	// 测试 key 对应的 value 所表示的范围是否连续
-	sort.Ints(l)
-	if l[0] != 0 { // 下标不是从0开始的
+	sort.Ints(L)
+	if L[0] != 0 { // 下标不是从0开始的
 		return -1, "数据范围不是从0开始"
 	}
 	var arr [2]int
-	for index, value := range l {
+	for index, value := range L {
 		tempArr := rangelistMap[value]
-		if (index == 0) {
+		if index == 0 {
 			arr = tempArr
 			continue
 		}
-		if arr[1] + 1 != tempArr[0] {
+		if arr[1]+1 != tempArr[0] {
 			return -1, "数据范围不连续"
 		}
 		arr = tempArr
 	}
 	// 取出索引范围内最大的值, 加 1 得到数据长度
-	return rangelistMap[l[len(l) - 1]][1] + 1, ""
+	return rangelistMap[L[len(L)-1]][1] + 1, ""
 }
 
 func checkCreateTaskData(data model.CreateTaskData) string {
@@ -138,15 +133,16 @@ func CreateTask(req model.CreateTaskData) (string, error) {
 		return "", errors.New(msg)
 	}
 
-	taskid := util.GetNowDateToStr(util.TIME_TEMPLATE_2);
+	taskid := util.GetNowDateToStr(util.TIME_TEMPLATE_2)
 
-	dealData := model.TaskDealData {
+	dealData := model.TaskDealData{
 		CreateTaskData: req,
-		Taskid: taskid,
-		State: model.NOT_START,
+		Taskid:         taskid,
+		State:          model.NOT_START,
 	}
 	// 未作键值 taskid 重复校验，因为单人使用并发量不大
 	taskMap[taskid] = &dealData
+	taskMapArr = append(taskMapArr, &dealData)
 	return taskid, nil
 }
 
@@ -155,15 +151,17 @@ func CreateTask(req model.CreateTaskData) (string, error) {
  */
 func GetAllTaskDescript(state int) []model.TaskDealDataDescript {
 	var arr []model.TaskDealDataDescript
-	for _, v := range taskMap {
-		if (state == -1 || state == v.State) {
+	lenth := len(taskMapArr)
+	for i := lenth - 1; i >= 0; i-- {
+		v := taskMapArr[i]
+		if state == -1 || state == v.State {
 			desc := model.TaskDealDataDescript{
-				TaskId:       v.Taskid,
+				TaskId:        v.Taskid,
 				TargetAddress: v.TargetAddress,
-				TargetPort:   v.TargetPort,
-				State:        v.State,
-				StartTime:    v.StartTime,
-				EndTime:      v.EndTime,
+				TargetPort:    v.TargetPort,
+				State:         v.State,
+				StartTime:     v.StartTime,
+				EndTime:       v.EndTime,
 			}
 			arr = append(arr, desc)
 		}
@@ -177,10 +175,10 @@ func GetTaskByTaskId(taskId string) *model.TaskDealData {
 
 func TestConnectivityCheckParam(req model.TestConnectivityRequest) string {
 	resultCodes := ""
-	if (req.TargetAddress == "") {
+	if req.TargetAddress == "" {
 		resultCodes += "1001,"
 	}
-	if (req.TargetPort == "") {
+	if req.TargetPort == "" {
 		resultCodes += "1002,"
 	}
 	return resultCodes
@@ -188,33 +186,36 @@ func TestConnectivityCheckParam(req model.TestConnectivityRequest) string {
 
 // 测试连接
 func TestConnectivity(address, port string) bool {
-	conn, err := net.Dial("tcp", address + ":" + port)
+	conn, err := net.Dial("tcp", address+":"+port)
 	if err == nil {
 		defer conn.Close()
 	}
-	return err == nil// && panicError == nil
+	return err == nil // && panicError == nil
 }
 
 type countData struct {
 	totalRequestCount int
-	totalCostTime float64
-	costMaxTime float64
-	costMinTime float64
-	totalResponseTime float64
-	responseMaxTime float64
-	responseMinTime float64
-	succCount int
-	failCount int
-	timeoutCount int
-	sendDataSize int // 发送的数据量，单位 byte
+	totalCostTime     float64
+	costMaxTime       float64
+	costMinTime       float64
+	//totalResponseTime float64
+	//responseMaxTime float64
+	//responseMinTime float64
+	succCount      int
+	failCount      int
+	timeoutCount   int
+	sendDataSize   int // 发送的数据量，单位 byte
 	reciveDataSize int
+	isFail         bool // 此次连接是否失败
+	isTimeout      bool // 此次连接是否超时
+	isWaitReadEnd  bool // 未填写期望返回字节时，是否有正常等待结束的时候
 }
 
 // 如果测试失败了，只看返回值 countData 的 failCount 和 timeoutCount 计数
 // cdata 里面的 max 和 min time 都不设置，只设置总时间
 // syncCh 不为空时，支持同步
 // return: countData 为计数信息，bool 为 true 时，测试成功，false 测试失败
-func StartSingleThread(d model.CreateTaskData, outdata *countData, outb *bool, syncCh chan <- int) {
+func StartSingleThread(d model.CreateTaskData, outdata *countData, outb *bool, syncCh chan<- int) {
 	cdata := outdata
 	*outb = false
 	if syncCh != nil {
@@ -226,129 +227,225 @@ func StartSingleThread(d model.CreateTaskData, outdata *countData, outb *bool, s
 	var err error
 	timeoutSecond := d.Timeout
 	if timeoutSecond > 0 {
-		conn, err = net.DialTimeout("tcp", d.TargetAddress + ":" + d.TargetPort, time.Duration(timeoutSecond * 1e6))
+		conn, err = net.DialTimeout("tcp", d.TargetAddress+":"+d.TargetPort, time.Duration(timeoutSecond*1e6))
 		//conn, err = net.Dial("tcp", d.TargetAddress + ":" + d.TargetPort)
 	} else {
-		conn, err = net.Dial("tcp", d.TargetAddress + ":" + d.TargetPort)
+		conn, err = net.Dial("tcp", d.TargetAddress+":"+d.TargetPort)
+	}
+	repeatTime := 1
+	if d.IsRepeat {
+		repeatTime = d.RepeatTime
 	}
 
 	if err != nil {
 		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-			cdata.timeoutCount++
+			cdata.timeoutCount += repeatTime
 		} else {
-			cdata.failCount++
+			cdata.failCount += repeatTime
 		}
 		log.Error("StartSingleThread Dial err:" + err.Error())
 		return
 	}
 	defer conn.Close()
+	*outb = true
 
 	waitResponseCh := make(chan int)
-	var responseStart time.Time
-	var responseEnd time.Time
-	if (d.HasResponse) { // 读取数据
+
+	tempCDataRead := getDefaultTotalCData()
+	startSingleRead(conn, d, &tempCDataRead, waitResponseCh)
+
+	for i := 0; i < repeatTime; i++ { // 重复发送
+		var tempCData = getDefaultTotalCData()
+		var ret bool
+		startSingleSend(conn, d, &tempCData, &ret)
+		mergeSingleResult(tempCData, cdata, ret)
+		if d.IntervalTime > 0 && i != repeatTime-1 { // 最后一次不用休眠
+			time.Sleep(time.Duration(d.IntervalTime * 1e6))
+		}
+	}
+	if d.HasResponse {
+		<-waitResponseCh
+	}
+	// 响应值取平均值，因为无法区分单个请求的响应
+	// 减去因为发送间隔时间而阻塞的时间
+	//tempCDataRead.totalResponseTime = (tempCDataRead.totalResponseTime - float64(d.IntervalTime * (repeatTime - 1))) / float64(d.ThreadNum) / float64(repeatTime)
+	mergeSingleResult(tempCDataRead, cdata, true)
+	if tempCDataRead.isTimeout { // 接收程序中，只要出现了timeout，则全判timeout(不覆盖 startSingleSend 中的 failCount )
+		n := repeatTime - cdata.failCount
+		cdata.timeoutCount += n
+		cdata.succCount -= n
+	} else if tempCDataRead.isFail { // 此处可能是服务端关闭连接，由于我方读取等待时间太长，而对端写完了数据就马上关闭了
+
+	}
+	/*if (d.HasResponse) {
+		cdata.totalCostTime += cdata.totalResponseTime
+	}*/
+}
+
+func startSingleRead(conn net.Conn, d model.CreateTaskData, outdata *countData, waitResponseCh chan<- int) {
+	if d.HasResponse { // 读取数据
 		go func() {
-			count := 0
+			var responseStart time.Time
+			//var responseEnd time.Time
 			defer close(waitResponseCh)
+			count := 0
+			var buf = make([]byte, default_read_buf_size)
+			var preResponseTime time.Time
+			repeatTime := 1
+			if d.IsRepeat {
+				repeatTime = d.RepeatTime
+			}
+			totalExpectBytes := d.ExpectedBytes * repeatTime
+			cdata := outdata
 			responseStart = time.Now()
 			conn.SetReadDeadline(responseStart.Add(time.Duration(d.ReadTimeout * 1e6)))
-			var buf []byte = make([]byte, default_read_buf_size)
-			var preResponseTime time.Time
 			for { // 不计算最后一次超时时间
 				preResponseTime = time.Now()
-				rdn, err := conn.Read(buf)
-				count++
-				responseEnd = time.Now()
-				// fmt.Println("StartSingleThread read:", rdn, "byte:", string(buf))
+				responseStart = time.Now()
+				if count > 0 { // 大于0时，要算上发送间隔时间
+					conn.SetReadDeadline(preResponseTime.Add(time.Duration(d.ReadTimeout*1e6 + d.IntervalTime*1e6)))
+				}
+				rdn, err := conn.Read(buf) // 有发送间隔，此处至少会阻塞间隔那么长时间
+				cdata.reciveDataSize += rdn
+				//fmt.Println("recv:", string(buf))
+				//responseEnd = time.Now()
 				buf = make([]byte, default_read_buf_size)
 				if err != nil {
 					if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
 						// 根据读超时时间自动断开的连接，不算错误，不计算本次响应时间
-						if (count > 0) { // 如果一次数据都没接收，则算上超时时间
-							responseEnd = preResponseTime
-						} else {
+						if count > 0 {
+							//responseEnd = preResponseTime
+							cdata.isWaitReadEnd = true
+							//cdata.totalResponseTime += float64(util.GetTimestamp(responseEnd) - util.GetTimestamp(responseStart))
+							break
+						} else { // 如果一次数据都没接收，超时了，说明是真的超时，这时候报错，不计算其超时时间
 							log.Error("StartSingleThread Read timeout err:" + err.Error())
-							cdata.timeoutCount++
-							return
+							cdata.isTimeout = true // 一次超时，后面的请求全算超时
 						}
-						break
+						return
 					}
+					cdata.isFail = true // 一次读取非超时错误，后面的请求全算错误
 					log.Error("StartSingleThread Read err:" + err.Error())
 					return
 				}
-				cdata.reciveDataSize += rdn
-				if d.ExpectedBytes > 0 && cdata.reciveDataSize >= d.ExpectedBytes {
+				//cdata.totalResponseTime += float64(util.GetTimestamp(responseEnd) - util.GetTimestamp(responseStart))
+				if d.ExpectedBytes > 0 && cdata.reciveDataSize >= totalExpectBytes {
 					break
 				}
+				count++
 			}
 		}()
 	}
+}
 
-	writeStart := time.Now()
-	conn.SetWriteDeadline(writeStart.Add(time.Duration(d.ReadTimeout * 1e9)))
+func startSingleSend(conn net.Conn, d model.CreateTaskData, outdata *countData, outb *bool) {
+	cdata := outdata
+	*outb = false
+	var err error
+
+	start := time.Now()
+	var end time.Time
+	defer func() {
+		end = time.Now()
+		cdata.totalCostTime = float64(util.GetTimestamp(end) - util.GetTimestamp(start))
+	}()
+	//conn.SetWriteDeadline(time.Now().Add(time.Duration(5 * 1e9)))
 	wrn, err := conn.Write(d.Data)
 	if err != nil {
 		cdata.failCount++
 		log.Error("StartSingleThread Write err:" + err.Error())
 		return
 	}
-	writeEnd := time.Now()
 	cdata.sendDataSize += wrn
-
-	<-waitResponseCh
-	writeTotal := float64(util.GetTimestamp(writeEnd) - util.GetTimestamp(writeStart))
-	if (d.HasResponse) {
-		responseTotal := float64(util.GetTimestamp(responseEnd) - util.GetTimestamp(responseStart))
-		cdata.totalCostTime = writeTotal + responseTotal
-		cdata.totalResponseTime = responseTotal
-	} else {
-		cdata.totalCostTime = writeTotal
-	}
 	cdata.succCount++
-
 	*outb = true
 }
 
-func compute(cdata countData, totalCount *countData, isSucc bool) {
-	totalCount.totalRequestCount++
+func mergeSingleResult(cdata countData, totalCount *countData, isSucc bool) {
 	if isSucc {
 		totalCount.succCount += cdata.succCount
-		totalCount.totalResponseTime += cdata.totalResponseTime
-		totalCount.totalCostTime += cdata.totalCostTime
 		if totalCount.costMaxTime < cdata.totalCostTime {
 			totalCount.costMaxTime = cdata.totalCostTime
 		}
 		if totalCount.costMinTime > cdata.totalCostTime {
 			totalCount.costMinTime = cdata.totalCostTime
 		}
-		if totalCount.responseMaxTime < cdata.totalResponseTime {
+		/*if totalCount.responseMaxTime < cdata.totalResponseTime {
 			totalCount.responseMaxTime = cdata.totalResponseTime
 		}
 		if totalCount.responseMinTime > cdata.totalResponseTime {
 			totalCount.responseMinTime = cdata.totalResponseTime
-		}
+		}*/
 		totalCount.sendDataSize += cdata.sendDataSize
 		totalCount.reciveDataSize += cdata.reciveDataSize
-	} else {
-		totalCount.timeoutCount += cdata.timeoutCount
-		totalCount.failCount += cdata.failCount
+		if cdata.isWaitReadEnd {
+			totalCount.isWaitReadEnd = true
+		}
 	}
+	totalCount.timeoutCount += cdata.timeoutCount
+	totalCount.failCount += cdata.failCount
+	totalCount.totalRequestCount = totalCount.succCount + totalCount.timeoutCount + totalCount.failCount
+}
+
+func mergeResult(cdata countData, totalCount *countData, isSucc bool) {
+	if isSucc {
+		totalCount.succCount += cdata.succCount
+		//totalCount.totalResponseTime += cdata.totalResponseTime
+		//totalCount.totalCostTime += cdata.totalCostTime
+		if totalCount.costMaxTime < cdata.costMaxTime {
+			totalCount.costMaxTime = cdata.costMaxTime
+		}
+		if totalCount.costMinTime > cdata.costMinTime {
+			totalCount.costMinTime = cdata.costMinTime
+		}
+		/*if totalCount.responseMaxTime < cdata.responseMaxTime {
+			totalCount.responseMaxTime = cdata.responseMaxTime
+		}
+		if totalCount.responseMinTime > cdata.responseMinTime {
+			totalCount.responseMinTime = cdata.responseMinTime
+		}*/
+		totalCount.sendDataSize += cdata.sendDataSize
+		totalCount.reciveDataSize += cdata.reciveDataSize
+		if cdata.isWaitReadEnd {
+			totalCount.isWaitReadEnd = true
+		}
+	}
+	totalCount.timeoutCount += cdata.timeoutCount
+	totalCount.failCount += cdata.failCount
+	totalCount.totalRequestCount = totalCount.succCount + totalCount.timeoutCount + totalCount.failCount
 }
 
 func startTestAndCompute(c model.CreateTaskData, outTotalCData *countData, syncCh chan int, mutex *sync.Mutex) {
 	ch := make(chan int)
-	var tempCData countData
+	var tempCData = getDefaultTotalCData()
 	var ret bool
 	go StartSingleThread(c, &tempCData, &ret, ch)
 	// 计算结果
 	<-ch
 	mutex.Lock()
-	compute(tempCData, outTotalCData, ret)
+	mergeResult(tempCData, outTotalCData, ret)
 	mutex.Unlock()
 	syncCh <- 0
 }
 
-// 开始任务
+func getDefaultTotalCData() countData {
+	return countData{
+		totalRequestCount: 0,
+		totalCostTime:     0,
+		costMaxTime:       float64(intsets.MinInt),
+		costMinTime:       float64(intsets.MaxInt),
+		/*totalResponseTime: 0,
+		responseMaxTime:   float64(intsets.MinInt),
+		responseMinTime:   float64(intsets.MaxInt),*/
+		succCount:      0,
+		failCount:      0,
+		timeoutCount:   0,
+		sendDataSize:   0,
+		reciveDataSize: 0,
+	}
+}
+
+// 开始任务，异步执行
 func StartTask(taskId string) error {
 	v, ok := taskMap[taskId]
 	if !ok {
@@ -358,60 +455,51 @@ func StartTask(taskId string) error {
 		return errors.New("该任务正在运行")
 	}
 
-	startTime := time.Now()
-	v.State = model.RUNNING
-	v.StartTime = util.GetDateToStr(startTime, util.TIME_TEMPLATE_1)
+	go func() {
+		startTime := time.Now()
+		v.State = model.RUNNING
+		v.StartTime = util.GetDateToStr(startTime, util.TIME_TEMPLATE_1)
 
-	repeatCount := 1
-	if v.CreateTaskData.IsRepeat {
-		repeatCount = v.CreateTaskData.RepeatTime
-	}
-
-	totalCData := countData{
-		totalRequestCount: 0,
-		totalCostTime:     0,
-		costMaxTime:       -999,
-		costMinTime:       999,
-		totalResponseTime: 0,
-		responseMaxTime:   -999,
-		responseMinTime:   999,
-		succCount:         0,
-		failCount:         0,
-		timeoutCount:      0,
-		sendDataSize:      0,
-		reciveDataSize:    0,
-	}
-	var lock sync.Mutex
-	ch := make(chan int)
-	for i := 0; i < repeatCount; i++ {
-		go startTestAndCompute(v.CreateTaskData, &totalCData, ch, &lock)
-	}
-	for i := 0; i < repeatCount; i++ {
-		<-ch
-	}
-	// 计算各类平均值
-	v.EndTime = util.GetNowDateToStr(util.TIME_TEMPLATE_1)
-	v.TotalRequestCount = totalCData.totalRequestCount
-	v.RequestAverageCostTime = totalCData.totalCostTime / float64(totalCData.succCount)
-	v.RequestCostMaxTime = totalCData.costMaxTime
-	v.RequestCostMinTime = totalCData.costMinTime
-	v.RequestAverageResponseTime = totalCData.totalResponseTime / float64(totalCData.succCount)
-	v.RequestResponseMaxTime = totalCData.responseMaxTime
-	v.RequestResponseMinTime = totalCData.responseMinTime
-	if totalCData.totalCostTime == 0 {
-		v.TransactionRate = 0
-		v.Throughput = 0
-	} else {
-		v.TransactionRate = float64(totalCData.totalRequestCount) / (totalCData.totalCostTime / 1000)
-		v.Throughput = float64(totalCData.sendDataSize + totalCData.reciveDataSize) / (totalCData.totalCostTime / 1000)
-	}
-	v.SuccTransactions = totalCData.succCount
-	v.FailTransactions = totalCData.failCount
-	v.TimeOutTransactions = totalCData.timeoutCount
-	v.DataTransferred = totalCData.reciveDataSize + totalCData.sendDataSize
-	v.TotalCostTime = totalCData.totalCostTime
-	v.State = model.FINISH
-
+		totalCData := getDefaultTotalCData()
+		var lock sync.Mutex
+		ch := make(chan int)
+		for i := 0; i < v.ThreadNum; i++ {
+			go startTestAndCompute(v.CreateTaskData, &totalCData, ch, &lock)
+		}
+		for i := 0; i < v.ThreadNum; i++ {
+			<-ch
+		}
+		endTime := time.Now()
+		totalCData.totalCostTime = float64(util.GetTimestamp(endTime) - util.GetTimestamp(startTime))
+		// 计算各类平均值
+		v.TotalRealCostTime = totalCData.totalCostTime
+		if totalCData.isWaitReadEnd { // 如果发生了正常等待则请求总时间要减去这个等待时间
+			totalCData.totalCostTime -= float64(v.ReadTimeout)
+		}
+		v.EndTime = util.GetDateToStr(endTime, util.TIME_TEMPLATE_1)
+		v.TotalRequestCount = totalCData.totalRequestCount
+		v.RequestAverageCostTime = totalCData.totalCostTime / float64(totalCData.totalRequestCount)
+		v.RequestCostMaxTime = totalCData.costMaxTime
+		v.RequestCostMinTime = totalCData.costMinTime
+		//v.RequestAverageResponseTime = totalCData.totalResponseTime / float64(totalCData.succCount)
+		//v.RequestResponseMaxTime = totalCData.responseMaxTime
+		//v.RequestResponseMinTime = totalCData.responseMinTime
+		if totalCData.totalCostTime == 0 {
+			v.TransactionRate = 0
+			v.Throughput = 0
+		} else {
+			v.TransactionRate = float64(totalCData.totalRequestCount) / (totalCData.totalCostTime / 1000)
+			v.Throughput = float64(totalCData.sendDataSize+totalCData.reciveDataSize) / (totalCData.totalCostTime / 1000)
+		}
+		v.SuccTransactions = totalCData.succCount
+		v.FailTransactions = totalCData.failCount
+		v.TimeOutTransactions = totalCData.timeoutCount
+		v.DataTransferred = totalCData.reciveDataSize + totalCData.sendDataSize
+		v.SendBytes = totalCData.sendDataSize
+		v.RecvBytes = totalCData.reciveDataSize
+		v.TotalCostTime = totalCData.totalCostTime
+		v.State = model.FINISH
+	}()
 	return nil
 }
 
@@ -420,10 +508,3 @@ func ConvertTaskDealDataToJson(d model.TaskDealData) (string, error) {
 	bytes, e := json.Marshal(d)
 	return string(bytes), e
 }
-
-
-
-
-
-
-

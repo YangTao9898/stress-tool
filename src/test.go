@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"net"
+	"stress-tool/model"
 )
 
 func listen() {
@@ -65,8 +64,10 @@ func main() {
 	s2 := []string{"334", "556"}
 	s1 = append(s1, s2...)
 	fmt.Println(s1)*/
-	var a int64 = 1
-	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.BigEndian, a)
-	fmt.Println(buf.Len(), buf.Bytes())
+	// []byte 转 数字
+
+	ch := make(chan model.TaskDealData)
+	close(ch)
+	i := <-ch
+	fmt.Printf("%+v", i)
 }

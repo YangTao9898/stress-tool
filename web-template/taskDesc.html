@@ -34,7 +34,7 @@
             var node =
                 '<div class="task-desc-node top-pad-1">' +
                 '   <a href="#" class="list-group-item list-group-item-action ' + addClass + '">' +
-                        innerHtml + '<button class="btn btn-default" onclick="getTaskDetail(' + taskId + ')">查看详情</button></a>' +
+                        innerHtml + '<button class="btn btn-default" onclick="TaskDetal.getTaskDetail(\'' + taskId + '\')">查看详情</button></a>' +
                 '   <input type="hidden" value="' + taskId + '">' +
                 '</div>'
             $("#task-desc-list").append($(node))
@@ -78,7 +78,7 @@
                             if (data[i].state > ready) {
                                 timeInfo = " &nbsp;&nbsp;执行开始时间: " + data[i].startTime + " &nbsp;&nbsp;执行结束时间: " + data[i].endTime
                             }
-                            var desc = "<div style='display: inline-block; width: 50%;'>任务id: " + data[i].taskId + " &nbsp;&nbsp;地址: " + data[i].targetAddress + " &nbsp;&nbsp;端口: " + data[i].targetPort + timeInfo +
+                            var desc = "<div style='display: inline-block; width: 60%;'>任务id: " + data[i].taskId + " &nbsp;&nbsp;地址: " + data[i].targetAddress + " &nbsp;&nbsp;端口: " + data[i].targetPort + timeInfo +
                                     " &nbsp;&nbsp;执行状态: " + stateDesc + "</div>"
                             addTaskNode(data[i].state, desc, data[i].taskId)
                         }

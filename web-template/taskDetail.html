@@ -3,167 +3,217 @@
         <div>
             <div class="modal-backdrop show" style="opacity:.5; z-index: 1" onclick="hidTaskDetail()">
             </div>
-            <div style="position: fixed; top: 0; left: 0; right: 0;width: 60%; margin: 20px auto; background-color: whitesmoke; border-radius: 7px; z-index: 2;">
+            <div style="position: fixed; top: 0; left: 0; right: 0; width: 60%; height: 95%; margin: 20px auto;
+                    background-color: whitesmoke; border-radius: 7px; z-index: 2; overflow: scroll; overflow-x: hidden; overflow-y: auto;">
                 <div style="display: flex; justify-content: space-around;">
-                    <div style="width: 49%; height: 100%; padding: 0 0 10px 5px;">
+                    <div style="width: 49%; height: 100%; padding: 0 0 0 5px;">
                         <table class="table">
-                            <caption>压测参数</caption>
+                            <caption>压测详情</caption>
                             <tbody>
                             <tr>
+                                <td>任务标识</td>
+                                <td id="detailTaskid">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>运行状态</td>
+                                <td id="detailState">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>开始时间</td>
+                                <td id="detailStartTime">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>结束时间</td>
+                                <td id="detailEndTime">ssss</td>
+                            </tr>
+                            <tr>
                                 <td>测试机器IP或域名</td>
-                                <td>Bangalore</td>
+                                <td id="detailTargetAddress">Bangalore</td>
                             </tr>
                             <tr>
                                 <td>测试机器端口</td>
-                                <td>Mumbai</td>
+                                <td id="detailTargetPort">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>连接超时时间（ms）</td>
-                                <td>Mumbai</td>
+                                <td id="detailTimeout">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>线程数</td>
-                                <td>Mumbai</td>
+                                <td id="detailThreadNum">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>测试机是否有返回值</td>
-                                <td>Mumbai</td>
+                                <td id="detailHasResponse">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>读取超时时间（ms）</td>
-                                <td>Mumbai</td>
+                                <td id="detailReadTimeout">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>期望返回字节数（byte）</td>
-                                <td>Mumbai</td>
+                                <td id="detailExpectedBytes">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>是否重复发送</td>
-                                <td>Mumbai</td>
+                                <td id="detailIsRepeat">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>重复发送次数</td>
-                                <td>Mumbai</td>
+                                <td id="detailRepeatTime">Mumbai</td>
                             </tr>
                             <tr>
                                 <td>重复发送间隔（ms）</td>
-                                <td>Mumbai</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        <table class="table">
-                            <caption>请求数据</caption>
-                            <thead>
-                            <tr>
-                                <td>类型</td>
-                                <td>长度</td>
-                                <td>数据</td>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>int</td>
-                                <td>4</td>
-                                <td>122</td>
-                            </tr>
-                            <tr>
-                                <td>string</td>
-                                <td>4</td>
-                                <td>ssss</td>
+                                <td id="detailIntervalTime">Mumbai</td>
                             </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style="width: 49%; height: 100%; padding: 0 5px 10px 0;">
+                    <div style="width: 49%; height: 100%; padding: 0 5px 0 0;">
                         <table class="table">
-                            <caption>压测结果</caption>
+                            <caption>压测详情</caption>
                             <tbody>
                             <tr>
-                                <td>任务标识</td>
-                                <td>ssss</td>
-                            </tr>
-                            <tr>
-                                <td>运行状态</td>
-                                <td>ssss</td>
-                            </tr>
-                            <tr>
-                                <td>开始时间</td>
-                                <td>ssss</td>
-                            </tr>
-                            <tr>
-                                <td>结束时间</td>
-                                <td>ssss</td>
-                            </tr>
-                            <tr>
                                 <td>请求总次数</td>
-                                <td>ssss</td>
+                                <td id="detailTotalRequestCount">ssss</td>
                             </tr>
                             <tr>
                                 <td>单次请求花费的平均时间（ms）</td>
-                                <td>ssss</td>
+                                <td id="detailRequestAverageCostTime">ssss</td>
                             </tr>
                             <tr>
                                 <td>单次请求花费的最大时间（ms）</td>
-                                <td>ssss</td>
+                                <td id="detailRequestCostMaxTime">ssss</td>
                             </tr>
                             <tr>
                                 <td>单次请求花费的最小时间（ms）</td>
-                                <td>ssss</td>
+                                <td id="detailRequestCostMinTime">ssss</td>
                             </tr>
-                            <tr>
+{{/*                            <tr>
                                 <td>单次请求响应的平均时间（ms）</td>
-                                <td>ssss</td>
+                                <td id="detailRequestAverageResponseTime">ssss</td>
                             </tr>
                             <tr>
                                 <td>单次请求最大响应时间（ms）</td>
-                                <td>ssss</td>
+                                <td id="detailRequestResponseMaxTime">ssss</td>
                             </tr>
                             <tr>
                                 <td>单次请求最小响应时间（ms）</td>
-                                <td>ssss</td>
-                            </tr>
+                                <td id="detailRequestResponseMinTime">ssss</td>
+                            </tr>*/}}
                             <tr>
-                                <td>每秒处理请求</td>
-                                <td>ssss</td>
+                                <td>每秒处理请求数</td>
+                                <td id="detailTransactionRate">ssss</td>
                             </tr>
                             <tr>
                                 <td>请求成功数</td>
-                                <td>ssss</td>
+                                <td id="detailSuccTransactions">ssss</td>
                             </tr>
                             <tr>
                                 <td>请求失败数</td>
-                                <td>ssss</td>
+                                <td id="detailFailTransactions">ssss</td>
                             </tr>
                             <tr>
                                 <td>请求超时数</td>
-                                <td>ssss</td>
+                                <td id="detailTimeOutTransactions">ssss</td>
                             </tr>
                             <tr>
                                 <td>总传输数据量</td>
-                                <td>ssss</td>
+                                <td id="detailDataTransferred">ssss</td>
                             </tr>
                             <tr>
                                 <td>每秒钟传输的数据量</td>
-                                <td>ssss</td>
+                                <td id="detailThroughput">ssss</td>
                             </tr>
                             <tr>
-                                <td>花费总时间，不计失败数（ms）</td>
-                                <td>ssss</td>
+                                <td>接受总数据量</td>
+                                <td id="recvBytes">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>花费总时间（ms）</td>
+                                <td id="detailTotalCostTime">ssss</td>
                             </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right; background-color: #C6F089;">开始执行</button>
+                <div class="left-margin-1 right-margin-1">
+                    <table class="table">
+                        <caption>请求数据</caption>
+                        <thead>
+                        <tr>
+                            <td width="5%">类型</td>
+                            <td width="5%">长度</td>
+                            <td>数据</td>
+                            <td style="color: #5bc0de" id="dataRadixTd">
+                                <span onclick="dataRadixSwitchBtnClick()" class="pointer" id="dataRadixSwitchBtn">8进制数据(点击切换)</span>&nbsp;&nbsp;
+                                <span onclick="showDataRadixBtnClick()" class="pointer" id="showDataRadixBtn">关闭进制显示</span>
+                            </td>
+                        </tr>
+                        </thead>
+                        <tbody id="detailDataMapArr">
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right; background-color: #C6F089;"
+                    onclick="startExec()">开始执行</button>
                 <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right;" onclick="hidTaskDetail()">返回</button>
             </div>
         </div>
     </div>
     <script>
+        TaskDetal.getTaskDetail = getTaskDetail
+
         function hidTaskDetail() {
             $("#taskDetailParent").hide()
         }
+
+        var isNumberRadixOctonary = true // true 为默认八进制
+        var isShowNumberRadixData = false // true 为显示进制数据
+        function dataRadixReset() {
+            isNumberRadixOctonary = false
+            isShowNumberRadixData = false
+            setDataRadixSwitch()
+            setShowDataRadix()
+        }
+
+        function setDataRadixSwitch() {
+            if (isNumberRadixOctonary) { // 切换为8进制
+                $("#dataRadixSwitchBtn").text("8进制数据(点击切换)")
+                $(".detailDataMapOctonary").show()
+                $(".detailDataMapBinary").hide()
+            } else { // 切换为2进制
+                $("#dataRadixSwitchBtn").text("2进制数据(点击切换)")
+                $(".detailDataMapOctonary").hide()
+                $(".detailDataMapBinary").show()
+            }
+        }
+
+        function setShowDataRadix() {
+            if (isShowNumberRadixData) { // 打开进制显示
+                $("#showDataRadixBtn").text("关闭进制显示")
+                $("#dataRadixSwitchBtn").show()
+                setDataRadixSwitch()
+            } else { // 关闭进制显示
+                $("#showDataRadixBtn").text("打开进制显示")
+                $("#dataRadixSwitchBtn").hide()
+                $(".detailDataMapOctonary").hide()
+                $(".detailDataMapBinary").hide()
+            }
+        }
+
+        function dataRadixSwitchBtnClick() {
+            isNumberRadixOctonary = !isNumberRadixOctonary
+            setDataRadixSwitch()
+        }
+
+        function showDataRadixBtnClick() {
+            isShowNumberRadixData = !isShowNumberRadixData
+            setShowDataRadix()
+        }
+
         function getTaskDetail(taskId) {
+            $("#detailDataMapArr").html("")
             $.loadingStart()
             $.ajax({
                 url: "/GetTaskDetail",
@@ -179,7 +229,103 @@
                         return
                     }
                     data = data.data
+                    if (data == null) {
+                        $.showAlertBox("错误", "任务不存在", true)
+                    }
+                    $("#detailTargetAddress").text(data.targetAddress)
+                    $("#detailTargetPort").text(data.targetPort)
+                    $("#detailTimeout").text(data.timeout)
+                    $("#detailReadTimeout").text(data.readTimeout)
+                    $("#detailExpectedBytes").text(data.expectedBytes)
+                    $("#detailThreadNum").text(data.threadNum)
+                    $("#detailIsRepeat").text(data.isRepeat)
+                    $("#detailRepeatTime").text(data.repeatTime)
+                    $("#detailIntervalTime").text(data.intervalTime)
+                    $("#detailHasResponse").text(data.hasResponse)
+                    $("#detailTaskid").text(data.taskid)
+                    $("#detailState").text(data.state)
+                    $("#detailStartTime").text(data.startTime)
+                    $("#detailEndTime").text(data.endTime)
+                    $("#detailTotalRequestCount").text(data.totalRequestCount)
+                    $("#detailRequestAverageCostTime").text(data.requestAverageCostTime)
+                    $("#detailRequestCostMaxTime").text(data.requestCostMaxTime)
+                    $("#detailRequestCostMinTime").text(data.requestCostMinTime)
+                    $("#detailRequestAverageResponseTime").text(data.requestAverageResponseTime)
+                    $("#detailRequestResponseMaxTime").text(data.requestResponseMaxTime)
+                    $("#detailRequestResponseMinTime").text(data.requestResponseMinTime)
+                    $("#detailTransactionRate").text(data.transactionRate)
+                    $("#detailSuccTransactions").text(data.succTransactions)
+                    $("#detailFailTransactions").text(data.failTransactions)
+                    $("#detailTimeOutTransactions").text(data.timeOutTransactions)
+                    $("#detailDataTransferred").text(data.dataTransferred)
+                    $("#recvBytes").text(data.recvBytes)
+                    $("#detailThroughput").text(data.throughput)
+                    $("#detailTotalCostTime").text(data.totalCostTime)
 
+                    var sendData = data.dataMapArr
+                    for (var i = 0, length = sendData.length; i < length; i++) {
+                        var o = sendData[i]
+                        var t = ""
+                        switch (o.type) {
+                            case "0":
+                                t = "int"
+                                break
+                            case "1":
+                                t = "float"
+                                break
+                            case "2":
+                                t = "string"
+                                break
+                        }
+                        var byteArr = "["
+                        for (var j = 0, lengthj = o.byteData.length; j < lengthj; j++) {
+                            if (j == lengthj - 1) {
+                                byteArr += o.byteData[j] + "]"
+                            } else {
+                                byteArr += o.byteData[j] + ", "
+                            }
+                        }
+                        // 发送的数据
+                        var node = '\
+                            <tr>\
+                                <td>' + t + '</td>\
+                                <td>' + o.length + '</td>\
+                                <td>' + o.data + '</td>\
+                                <td class="detailDataMapOctonary">' + byteArr + '</td>\
+                                <td class="detailDataMapBinary" style="display: none; word-wrap: break-word; word-break: break-all;">' + o.binaryData + '</td>\
+                            </tr>\
+                        '
+                        $("#detailDataMapArr").append($(node))
+                    }
+
+                    $("#taskDetailParent").show()
+                    setDataRadixSwitch()
+                    setShowDataRadix()
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
+        }
+
+        function startExec() {
+            var taskId = $("#detailTaskid").text()
+            $.ajax({
+                url: "/StartTask",
+                type: "POST",
+                data: JSON.stringify({
+                    "taskId": taskId,
+                }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function (data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        return
+                    }
+                    hidTaskDetail()
+                    $.showAlertBox("成功", data.errMsg)
                 },
                 error: function (err) {
                     $.loadingEnd()

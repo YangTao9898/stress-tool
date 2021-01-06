@@ -7,15 +7,15 @@ import (
 
 func TestIsInteger(t *testing.T) {
 	testStrMap := map[string]bool{ // 测试用例，key 为测试字符串，value 为结果
-		"0": true,
-		"01": false,
-		"10": true,
-		"-": false,
-		"-10": true,
-		"-01": false,
-		"+": false,
-		"+10": true,
-		"+01": false,
+		"0":    true,
+		"01":   false,
+		"10":   true,
+		"-":    false,
+		"-10":  true,
+		"-01":  false,
+		"+":    false,
+		"+10":  true,
+		"+01":  false,
 		"100a": false,
 		"10a0": false,
 		"a100": false,
@@ -98,7 +98,7 @@ func TestByteToMB(t *testing.T) {
 	}
 
 	expect = "1MB1B"
-	mb = ByteToMB(1024 * 1024 + 1)
+	mb = ByteToMB(1024*1024 + 1)
 	t.Logf("expect: [%s], get: [%s]", expect, mb)
 	if mb != expect {
 		t.Error("fail")
@@ -109,5 +109,42 @@ func TestByteToMB(t *testing.T) {
 	t.Logf("expect: [%s], get: [%s]", expect, mb)
 	if mb != expect {
 		t.Error("fail")
+	}
+}
+
+func TestBytesToBinaryString(t *testing.T) {
+	type testcase struct {
+		bytes     []byte
+		expectRes string
+	}
+
+	testcases := []testcase{}
+
+	testcases = append(testcases, testcase{
+		bytes:     []byte{1},
+		expectRes: "00000001",
+	})
+
+	testcases = append(testcases, testcase{
+		bytes:     []byte{0, 1},
+		expectRes: "0000000000000001",
+	})
+
+	testcases = append(testcases, testcase{
+		bytes:     []byte{255, 254},
+		expectRes: "1111111111111110",
+	})
+
+	testcases = append(testcases, testcase{
+		bytes:     []byte{0, 2, 0},
+		expectRes: "000000000000001000000000",
+	})
+
+	for _, v := range testcases {
+		res := BytesToBinaryString(v.bytes)
+		t.Logf("testcase [%+v] expect [%s], get [%s]", v.bytes, v.expectRes, res)
+		if res != v.expectRes {
+			t.Error("fail")
+		}
 	}
 }

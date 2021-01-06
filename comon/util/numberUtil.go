@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"unicode"
@@ -15,12 +16,12 @@ func IsInteger(str string) bool {
 		return false
 	}
 	var hasSign bool = str[0] == '-' || str[0] == '+'
-	if  hasSign && ((len(str) > 2 && str[1] == '0') || len(str) == 1) {
+	if hasSign && ((len(str) > 2 && str[1] == '0') || len(str) == 1) {
 		return false
 	}
 	for index, ch := range str {
 		if !unicode.IsDigit(ch) && !(hasSign && index == 0) {
-			return false;
+			return false
 		}
 	}
 	return true
@@ -47,7 +48,7 @@ func RoundFloat64(num float64, precision int) float64 {
 	// 将之转为字符串，再转为指定位数小数
 	f, err := strconv.ParseFloat(strconv.FormatFloat(num, 'f', precision, 64), 64)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("internal err in RoundFloat64:", err)
 	}
 	return f
 }
@@ -56,19 +57,36 @@ func RoundFloat64(num float64, precision int) float64 {
  * 将 byte 最多转为 MB
  */
 const mbs = 1024 * 1024
+
 func ByteToMB(b int) string {
 	s := ""
 	if b < 1024 {
 		return strconv.Itoa(b) + "B"
 	} else if b < mbs {
-		if b % 1024 > 0 {
+		if b%1024 > 0 {
 			s = ByteToMB(b % 1024)
 		}
-		return strconv.Itoa(b / 1024) + "KB" + s
+		return strconv.Itoa(b/1024) + "KB" + s
 	} else {
-		if b % mbs > 0 {
+		if b%mbs > 0 {
 			s = ByteToMB(b % mbs)
 		}
-		return strconv.Itoa(b / mbs) + "MB" + s
+		return strconv.Itoa(b/mbs) + "MB" + s
 	}
+}
+
+func BytesToBinaryString(bs []byte) string {
+	buf := bytes.NewBuffer([]byte{})
+	for _, v := range bs {
+		buf.WriteString(fmt.Sprintf("%08b", v))
+	}
+	return buf.String()
+}
+
+func BytesToByteString(bs []byte) []string {
+	byteArr := []string{}
+	for _, v := range bs {
+		byteArr = append(byteArr, fmt.Sprintf("%d", v))
+	}
+	return byteArr
 }

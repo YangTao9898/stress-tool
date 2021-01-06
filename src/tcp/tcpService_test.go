@@ -27,58 +27,73 @@ func addTestItem(dataTypeMap map[string]int, result bool) {
 
 func TestCheckDataRangeIsContinuous(t *testing.T) {
 	addTestItem(map[string]int{
-		"0~3": model.STRING,
-		"4~12": model.STRING,
+		"0~3":   model.STRING,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, true)
 	addTestItem(map[string]int{
-		"1~3": model.STRING,
-		"4~12": model.STRING,
+		"1~3":   model.STRING,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"-1~3": model.STRING,
-		"4~12": model.STRING,
+		"-1~3":  model.STRING,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"3~0": model.STRING,
-		"4~12": model.STRING,
+		"3~0":   model.STRING,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"3~0": model.STRING,
-		"4~12": model.STRING,
+		"3~0":   model.STRING,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"0~3": model.STRING,
+		"0~3":   model.STRING,
 		"4~-12": model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"0~3": model.STRING,
-		"4~12": model.STRING,
+		"0~3":   model.STRING,
+		"4~12":  model.STRING,
 		"11~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"0~11": model.STRING,
+		"0~11":  model.STRING,
 		"12~12": model.STRING,
 		"13~20": model.STRING,
 	}, true)
 	addTestItem(map[string]int{
-		"0~4": model.NUMBER,
-		"4~12": model.STRING,
+		"0~4":   model.NUMBER,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"0~4": model.FLOAT,
-		"4~12": model.STRING,
+		"0~4":   model.FLOAT,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 	addTestItem(map[string]int{
-		"0~4": model.FLOAT,
-		"4~12": model.STRING,
+		"0~4":   model.FLOAT,
+		"4~12":  model.STRING,
+		"13~20": model.STRING,
+	}, false)
+	addTestItem(map[string]int{
+		"0~a":   model.FLOAT,
+		"4~12":  model.STRING,
+		"13~20": model.STRING,
+	}, false)
+	addTestItem(map[string]int{
+		"0ss":   model.FLOAT,
+		"4~12":  model.STRING,
+		"13~20": model.STRING,
+	}, false)
+	addTestItem(map[string]int{
+		"0~2~3": model.FLOAT,
+		"4~12":  model.STRING,
 		"13~20": model.STRING,
 	}, false)
 
@@ -88,7 +103,7 @@ func TestCheckDataRangeIsContinuous(t *testing.T) {
 		m := testValues[i]
 		_, msg = CheckDataRangeIsContinuous(m)
 		expected := ""
-		if (!testResult[i]) {
+		if !testResult[i] {
 			expected = "Not null string"
 		}
 		t.Logf("Test CheckDataRangeIsContinuous: param: [%v], expected: [%s], get: [%s]", m, expected, msg)
@@ -101,19 +116,19 @@ func TestCheckDataRangeIsContinuous(t *testing.T) {
 func TestCreateTask(t *testing.T) {
 	data := model.CreateTaskData{
 		TargetAddress: "localhost",
-		TargetPort:   "8080",
-		ReadTimeout:  5000,
-		ThreadNum:    1,
-		IsRepeat:     false,
-		RepeatTime:   0,
-		IntervalTime: 0,
-		HasResponse:  true,
-		DataTypeMap:  []map[string]int{
+		TargetPort:    "8080",
+		ReadTimeout:   5000,
+		ThreadNum:     1,
+		IsRepeat:      false,
+		RepeatTime:    0,
+		IntervalTime:  0,
+		HasResponse:   true,
+		DataTypeMap: []map[string]int{
 			{"0~3": model.STRING},
 			{"4~5": model.STRING},
 			{"6~7": model.STRING},
 		},
-		Data:         []byte{0, 0, 0, 0, 0, 0, 0, 0},
+		Data: []byte{0, 0, 0, 0, 0, 0, 0, 0},
 	}
 	_, err := CreateTask(data)
 	t.Logf("TestCreateTask expected: [%s], get: [%v]", "nil", err)
@@ -123,18 +138,18 @@ func TestCreateTask(t *testing.T) {
 
 	data = model.CreateTaskData{
 		TargetAddress: "localhost",
-		TargetPort:   "8080",
-		ThreadNum:    1,
-		IsRepeat:     false,
-		RepeatTime:   0,
-		IntervalTime: 0,
-		HasResponse:  true,
-		DataTypeMap:  []map[string]int{
+		TargetPort:    "8080",
+		ThreadNum:     1,
+		IsRepeat:      false,
+		RepeatTime:    0,
+		IntervalTime:  0,
+		HasResponse:   true,
+		DataTypeMap: []map[string]int{
 			{"0~3": model.STRING},
 			{"4~5": model.STRING},
 			{"6~7": model.STRING},
 		},
-		Data:         []byte{0, 0, 0, 0, 0, 0, 0, 0, 0}, // 数据多一位
+		Data: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0}, // 数据多一位
 	}
 	_, err = CreateTask(data)
 	t.Logf("TestCreateTask expected: [%s], get: [%v]", "not nil", err)
@@ -144,12 +159,12 @@ func TestCreateTask(t *testing.T) {
 }
 
 func TestStartSingleThread(t *testing.T) {
-	serverResponse := "I am test server."
-	clientSend := "Hello, I am test client."
-	for i := 0; i < 12; i++ {
+	serverResponse := "123456789."
+	clientSend := "123456789."
+	/*for i := 0; i < 12; i++ {
 		serverResponse += serverResponse
 		clientSend += clientSend
-	}
+	}*/
 	ch := make(chan int)
 	ch1 := make(chan int)
 	ch2 := make(chan int)
@@ -197,18 +212,18 @@ func TestStartSingleThread(t *testing.T) {
 	time.Sleep(300 * 1e6)
 	// 构造测试数据
 	data := model.CreateTaskData{
-		TargetAddress:   "localhost",
-		TargetPort:     strconv.Itoa(port),
-		Timeout:        10000,
-		ReadTimeout:    1000,
+		TargetAddress: "localhost",
+		TargetPort:    strconv.Itoa(port),
+		Timeout:       10000,
+		ReadTimeout:   2000,
 		ExpectedBytes: len(serverResponse),
-		ThreadNum:      5,
-		IsRepeat:       false,
-		RepeatTime:     0,
-		IntervalTime:   0,
-		HasResponse:    true,
-		DataTypeMap:    nil,
-		Data:           []byte(clientSend),
+		ThreadNum:     1,
+		IsRepeat:      true,
+		RepeatTime:    4,
+		IntervalTime:  0,
+		HasResponse:   true,
+		DataTypeMap:   nil,
+		Data:          []byte(clientSend),
 	}
 
 	var outCdata countData
@@ -219,21 +234,22 @@ func TestStartSingleThread(t *testing.T) {
 	<-ch2
 	<-ch1
 	fmt.Printf("%+v \n", outCdata)
-	if (!outBool) {
+	if !outBool {
 		t.Error("Test StartSingleThread fail")
 	}
 }
 
 func TestStartTask(t *testing.T) {
-	serverResponse := "I am test server."
-	clientSend := "Hello, I am test client."
+	serverResponse := "123456789."
+	clientSend := "123456789.123456789."
 	isRepeat := true
-	repeatCount := 10
-	for i := 0; i < 10; i++ {
+	repeatCount := 1
+	threadNum := 1
+	intervalTime := 0
+	/*for i := 0; i < 10; i++ {
 		serverResponse += serverResponse
 		clientSend += clientSend
-	}
-	//ch := make(chan int)
+	}*/
 	ch1 := make(chan int)
 	ch2 := make(chan int)
 
@@ -249,37 +265,42 @@ func TestStartTask(t *testing.T) {
 
 	count := 1
 	if isRepeat {
-		count = repeatCount
+		count = threadNum
 	}
 	go func() {
-		for i := 0; i < count; i++ {
+		for i := 0; i < threadNum; i++ {
 			conn, err := listener.Accept()
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			defer conn.Close()
-			//fmt.Println("Accept conn")
-
 			go func() {
-				bs := make([]byte, 1024)
-				for {
-					_, err := conn.Read(bs)
-					// fmt.Println("recive ", n, " byte:", string(bs))
-					bs = make([]byte, 1024)
-					if err != nil {
-						ch2 <- 0
-						return
-					}
-				}
-			}()
+				defer conn.Close()
+				//fmt.Println("Accept conn")
 
-			_, err = conn.Write([]byte(serverResponse))
-			// fmt.Println("test write ", n, " byte")
-			if err != nil {
-				t.Error(err)
-			}
-			ch1 <- 0
+				go func() {
+					bs := make([]byte, 1024)
+					for {
+						_, err := conn.Read(bs)
+						// fmt.Println("recive ", n, " byte:", string(bs))
+						bs = make([]byte, 1024)
+						if err != nil {
+							ch2 <- 0
+							return
+						}
+					}
+				}()
+
+				for i := 0; i < repeatCount; i++ {
+					_, err = conn.Write([]byte(serverResponse))
+					// fmt.Println("test write ", n, " byte")
+					if err != nil {
+						t.Error(err)
+					}
+					time.Sleep(time.Duration(intervalTime * 1e6))
+				}
+				ch1 <- 0
+			}()
 		}
 	}()
 
@@ -287,20 +308,20 @@ func TestStartTask(t *testing.T) {
 	time.Sleep(300 * 1e6)
 	// 构造测试数据
 	data := model.CreateTaskData{
-		TargetAddress:   "localhost",
-		TargetPort:     strconv.Itoa(port),
-		Timeout:        10000,
-		ReadTimeout:    1000,
+		TargetAddress: "localhost",
+		TargetPort:    strconv.Itoa(port),
+		Timeout:       2000,
+		ReadTimeout:   500,
 		ExpectedBytes: len(serverResponse),
-		ThreadNum:      5,
-		IsRepeat:       isRepeat,
-		RepeatTime:     repeatCount,
-		IntervalTime:   0,
-		HasResponse:    true,
-		DataTypeMap:    []map[string]int{
+		ThreadNum:     threadNum,
+		IsRepeat:      isRepeat,
+		RepeatTime:    repeatCount,
+		IntervalTime:  intervalTime,
+		HasResponse:   true,
+		DataTypeMap: []map[string]int{
 			{"0~999999": 2},
 		},
-		Data:           []byte(clientSend),
+		Data: []byte(clientSend),
 	}
 
 	taskId, err := CreateTask(data)
@@ -330,20 +351,20 @@ func TestStartTask(t *testing.T) {
 
 func TestConvertTaskDealDataToJson(t *testing.T) {
 	cdata := model.CreateTaskData{
-		TargetAddress:   "localhost",
-		TargetPort:     "8080",
-		Timeout:        10000,
-		ReadTimeout:    1000,
-		ExpectedBytes:  32,
-		ThreadNum:      5,
-		IsRepeat:       false,
-		RepeatTime:     0,
-		IntervalTime:   0,
-		HasResponse:    true,
-		DataTypeMap:    []map[string]int{
+		TargetAddress: "localhost",
+		TargetPort:    "8080",
+		Timeout:       10000,
+		ReadTimeout:   1000,
+		ExpectedBytes: 32,
+		ThreadNum:     5,
+		IsRepeat:      false,
+		RepeatTime:    0,
+		IntervalTime:  0,
+		HasResponse:   true,
+		DataTypeMap: []map[string]int{
 			{"0~999999": 2},
 		},
-		Data:           []byte("xxxxxxxxxx"),
+		Data: []byte("xxxxxxxxxx"),
 	}
 	td := model.TaskDealData{
 		CreateTaskData:             cdata,
@@ -373,25 +394,3 @@ func TestConvertTaskDealDataToJson(t *testing.T) {
 	}
 	fmt.Println("ConvertTaskDealDataToJson result:", s)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

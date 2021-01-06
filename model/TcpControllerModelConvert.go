@@ -3,6 +3,8 @@ package model
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	go_logger "github.com/phachon/go-logger"
 	"strconv"
 	"stress-tool/comon/util"
@@ -32,15 +34,11 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 		resCode += "1003,"
 	}
 
-	readTimeout := 0
-	if req.HasResponse {
+	readTimeout := 10000
+	if req.HasResponse && req.ReadTimeout != "" {
 		readTimeout, err = strconv.Atoi(req.ReadTimeout)
 		if err != nil {
-			if req.ReadTimeout == "" {
-				resCode += "1004,"
-			} else {
-				resCode += "1005,"
-			}
+			resCode += "1005,"
 		}
 	}
 
@@ -75,11 +73,9 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 
 	intervalTime := 0
 	if req.IsRepeat {
-		intervalTime, err = strconv.Atoi(req.IntervalTime)
-		if err != nil {
-			if req.IntervalTime == "" {
-				resCode += "1012,"
-			} else {
+		if req.IntervalTime != "" {
+			intervalTime, err = strconv.Atoi(req.IntervalTime)
+			if err != nil {
 				resCode += "1013,"
 			}
 		}
@@ -92,11 +88,13 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 	dataMapArr := req.DataMapArr
 	databytes := bytes.NewBuffer([]byte{})
 	dataTypeMap := make([]map[string]int, len(dataMapArr))
+	isBigEndArr := make([]bool, len(dataMapArr))
 	num := 0
 	for index, v := range dataMapArr {
 		lengthStr := v.Length
 		data := v.Data
 		isBigEnd := v.IsBigEnd
+		isBigEndArr[index] = isBigEnd
 		tn, err := strconv.Atoi(v.Type)
 		if err != nil {
 			resCode += "1080"
@@ -241,25 +239,124 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 		IntervalTime:  intervalTime,
 		HasResponse:   req.HasResponse,
 		DataTypeMap:   dataTypeMap,
+		IsBigEnd:      isBigEndArr,
 		Data:          databytes.Bytes(),
 	}
 
 	return
 }
 
-func TaskDealDataToGetTaskDetailResponse(data TaskDealData) GetTaskDetailResponse {
+func byteToDataString(bs []byte, t int, length int, isBigEnd bool) (string, error) {
+	buf := bytes.NewBuffer(bs)
+	var resStr string
+	switch t {
+	case NUMBER:
+		var err error
+		if isBigEnd {
+			switch length {
+			case 1:
+				var n int8
+				err = binary.Read(buf, binary.BigEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 2:
+				var n int16
+				err = binary.Read(buf, binary.BigEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 4:
+				var n int32
+				err = binary.Read(buf, binary.BigEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 8:
+				var n int64
+				err = binary.Read(buf, binary.BigEndian, &n)
+				resStr = strconv.FormatInt(n, 10)
+			default:
+				return "", util.NewErrorf("NUMBER not support data length[%d]", length)
+			}
+		} else {
+			switch length {
+			case 1:
+				var n int8
+				err = binary.Read(buf, binary.LittleEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 2:
+				var n int16
+				err = binary.Read(buf, binary.LittleEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 4:
+				var n int32
+				err = binary.Read(buf, binary.LittleEndian, &n)
+				resStr = strconv.FormatInt(int64(n), 10)
+			case 8:
+				var n int64
+				err = binary.Read(buf, binary.LittleEndian, &n)
+				resStr = strconv.FormatInt(n, 10)
+			default:
+				return "", util.NewErrorf("NUMBER not support data length[%d]", length)
+			}
+		}
+		if err != nil {
+			return "", err
+		}
+		return resStr, err
+	case FLOAT:
+		var err error
+		if isBigEnd {
+			switch length {
+			case 4:
+				var f float32
+				err = binary.Read(buf, binary.BigEndian, &f)
+				resStr = strconv.FormatFloat(float64(f), 'f', -1, 32)
+			case 8:
+				var f float64
+				err = binary.Read(buf, binary.BigEndian, &f)
+				resStr = strconv.FormatFloat(f, 'f', -1, 64)
+			default:
+				return "", util.NewErrorf("FLOAT not support data length[%d]", length)
+			}
+		} else {
+			switch length {
+			case 4:
+				var f float32
+				err = binary.Read(buf, binary.LittleEndian, &f)
+				resStr = strconv.FormatFloat(float64(f), 'f', -1, 32)
+			case 8:
+				var f float64
+				err = binary.Read(buf, binary.LittleEndian, &f)
+				resStr = strconv.FormatFloat(f, 'f', -1, 64)
+			default:
+				return "", util.NewErrorf("FLOAT not support data length[%d]", length)
+			}
+		}
+		if err != nil {
+			return "", err
+		}
+		return resStr, err
+	case STRING:
+		return string(bs), nil
+	default:
+		return "", util.NewErrorf("not support data type[%d]", t)
+	}
+}
+
+func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailResponse, error) {
+	var res GetTaskDetailResponse
 	readTimeout := "-"
 	expectedBytes := "-"
 	if data.HasResponse {
-		readTimeout = strconv.Itoa(data.ReadTimeout) + "ms"
-		expectedBytes = strconv.Itoa(data.ExpectedBytes) + "Byte"
+		readTimeout = strconv.Itoa(data.ReadTimeout) + " ms"
+		if data.ExpectedBytes > 0 {
+			expectedBytes = strconv.Itoa(data.ExpectedBytes) + " Byte"
+		}
 	}
 
 	repeatTime := "-"
 	sendInterval := "-"
 	if data.IsRepeat {
 		repeatTime = strconv.Itoa(data.RepeatTime)
-		sendInterval = strconv.Itoa(data.IntervalTime) + "ms"
+		if data.IntervalTime > 0 {
+			sendInterval = strconv.Itoa(data.IntervalTime) + " ms"
+		}
 	}
 
 	state := ""
@@ -282,68 +379,104 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) GetTaskDetailRespons
 	requestAverageCostTime := "-"
 	requestCostMaxTime := "-"
 	requestCostMinTime := "-"
-	requestAverageResponseTime := "-"
+	/*requestAverageResponseTime := "-"
 	requestResponseMaxTime := "-"
-	requestResponseMinTime := "-"
+	requestResponseMinTime := "-"*/
 	transactionRate := "-"
 	succTransactions := "-"
 	failTransactions := "-"
 	timeOutTransactions := "-"
 	dataTransferred := "-"
 	throughput := "-"
+	recvBytes := "-"
 	totalCostTime := "-"
-	if data.State > READY {
+	totalRealCostTime := "-"
+	if data.State == RUNNING {
 		startTime = data.StartTime
-	} else if data.State > RUNNING {
+	} else if data.State == FINISH {
 		startTime = data.StartTime
 		endTime = data.EndTime
 		totalRequestCount = strconv.Itoa(data.TotalRequestCount)
-		requestAverageCostTime = strconv.FormatFloat(util.RoundFloat64(data.RequestAverageCostTime, 2), 'f', -1, 64) + "ms"
-		requestCostMaxTime = strconv.FormatFloat(util.RoundFloat64(data.RequestCostMaxTime, 2), 'f', -1, 64) + "ms"
-		requestCostMinTime = strconv.FormatFloat(util.RoundFloat64(data.RequestCostMinTime, 2), 'f', -1, 64) + "ms"
-		requestAverageResponseTime = strconv.FormatFloat(util.RoundFloat64(data.RequestAverageResponseTime, 2), 'f', -1, 64) + "ms"
-		requestResponseMaxTime = strconv.FormatFloat(util.RoundFloat64(data.RequestResponseMaxTime, 2), 'f', -1, 64) + "ms"
-		requestResponseMinTime = strconv.FormatFloat(util.RoundFloat64(data.RequestResponseMinTime, 2), 'f', -1, 64) + "ms"
-		transactionRate = strconv.FormatFloat(util.RoundFloat64(data.TransactionRate, 2), 'f', -1, 64) + " req/s"
 		succTransactions = strconv.Itoa(data.SuccTransactions)
 		failTransactions = strconv.Itoa(data.FailTransactions)
 		timeOutTransactions = strconv.Itoa(data.TimeOutTransactions)
 		dataTransferred = util.ByteToMB(data.DataTransferred)
 		throughput = util.ByteToMB(int(data.Throughput)) + "/s"
-		totalCostTime = strconv.FormatFloat(util.RoundFloat64(data.RequestCostMaxTime, 2), 'f', -1, 64) + "ms"
+		recvBytes = util.ByteToMB(data.RecvBytes)
+		totalCostTime = strconv.FormatFloat(util.RoundFloat64(data.TotalCostTime, 2), 'f', -1, 64) + " ms"
+		totalRealCostTime = strconv.FormatFloat(util.RoundFloat64(data.TotalRealCostTime, 2), 'f', -1, 64) + " ms"
+		if data.SuccTransactions != 0 {
+			requestAverageCostTime = strconv.FormatFloat(util.RoundFloat64(data.RequestAverageCostTime, 2), 'f', -1, 64) + " ms"
+			requestCostMaxTime = strconv.FormatFloat(util.RoundFloat64(data.RequestCostMaxTime, 2), 'f', -1, 64) + " ms"
+			requestCostMinTime = strconv.FormatFloat(util.RoundFloat64(data.RequestCostMinTime, 2), 'f', -1, 64) + " ms"
+			/*requestAverageResponseTime = strconv.FormatFloat(util.RoundFloat64(data.RequestAverageResponseTime, 2), 'f', -1, 64) + " ms"
+			requestResponseMaxTime = strconv.FormatFloat(util.RoundFloat64(data.RequestResponseMaxTime, 2), 'f', -1, 64) + " ms"
+			requestResponseMinTime = strconv.FormatFloat(util.RoundFloat64(data.RequestResponseMinTime, 2), 'f', -1, 64) + " ms"*/
+			transactionRate = strconv.FormatFloat(util.RoundFloat64(data.TransactionRate, 2), 'f', -1, 64) + " req/s"
+		}
 	}
 
-	res := GetTaskDetailResponse{
-		TargetAddress:              data.TargetAddress,
-		TargetPort:                 data.TargetPort,
-		Timeout:                    strconv.Itoa(data.Timeout) + "ms",
-		ReadTimeout:                readTimeout,
-		ExpectedBytes:              expectedBytes,
-		ThreadNum:                  strconv.Itoa(data.ThreadNum),
-		IsRepeat:                   data.IsRepeat,
-		RepeatTime:                 repeatTime,
-		IntervalTime:               sendInterval,
-		HasResponse:                data.HasResponse,
-		DataMapArr:                 nil,
-		Taskid:                     data.Taskid,
-		State:                      state,
-		StartTime:                  startTime,
-		EndTime:                    endTime,
-		TotalRequestCount:          totalRequestCount,
-		RequestAverageCostTime:     requestAverageCostTime,
-		RequestCostMaxTime:         requestCostMaxTime,
-		RequestCostMinTime:         requestCostMinTime,
-		RequestAverageResponseTime: requestAverageResponseTime,
+	dataMapArr := make([]GetTaskDetailDataMap, len(data.DataTypeMap))
+	for index, obj := range data.DataTypeMap {
+		for k, dataType := range obj { // 仅一次
+			n1, n2, err := CreateTaskDataKeySplite(k)
+			if err != nil {
+				errMsg := fmt.Sprintf("%s occur error: %s", "TaskDealDataToGetTaskDetailResponse", err.Error())
+				return res, errors.New(errMsg)
+			}
+			length := n2 - n1 + 1
+			if length <= 0 {
+				return res, errors.New(fmt.Sprintf("[%s] connot less [%s]", n2, n1))
+			}
+			dataBytes := data.Data[n1 : n2+1]
+			dataMapArr[index].Type = strconv.Itoa(dataType)
+			dataMapArr[index].Length = strconv.Itoa(length)
+			dataMapArr[index].BinaryData = util.BytesToBinaryString(dataBytes)
+			dataMapArr[index].ByteData = util.BytesToByteString(dataBytes)
+			dataMapArr[index].Data, err = byteToDataString(dataBytes, dataType, length, data.IsBigEnd[index])
+			if err != nil {
+				return res, util.WrapError("TaskDealDataToGetTaskDetailResponse parse data err:", err)
+			}
+		}
+	}
+
+	timeout := "-"
+	if data.Timeout > 0 {
+		timeout = strconv.Itoa(data.Timeout) + " ms"
+	}
+	res = GetTaskDetailResponse{
+		TargetAddress:          data.TargetAddress,
+		TargetPort:             data.TargetPort,
+		Timeout:                timeout,
+		ReadTimeout:            readTimeout,
+		ExpectedBytes:          expectedBytes,
+		ThreadNum:              strconv.Itoa(data.ThreadNum),
+		IsRepeat:               data.IsRepeat,
+		RepeatTime:             repeatTime,
+		IntervalTime:           sendInterval,
+		HasResponse:            data.HasResponse,
+		DataMapArr:             dataMapArr,
+		Taskid:                 data.Taskid,
+		State:                  state,
+		StartTime:              startTime,
+		EndTime:                endTime,
+		TotalRequestCount:      totalRequestCount,
+		RequestAverageCostTime: requestAverageCostTime,
+		RequestCostMaxTime:     requestCostMaxTime,
+		RequestCostMinTime:     requestCostMinTime,
+		/*RequestAverageResponseTime: requestAverageResponseTime,
 		RequestResponseMaxTime:     requestResponseMaxTime,
-		RequestResponseMinTime:     requestResponseMinTime,
-		TransactionRate:            transactionRate,
-		SuccTransactions:           succTransactions,
-		FailTransactions:           failTransactions,
-		TimeOutTransactions:        timeOutTransactions,
-		DataTransferred:            dataTransferred,
-		Throughput:                 throughput,
-		TotalCostTime:              totalCostTime,
+		RequestResponseMinTime:     requestResponseMinTime,*/
+		TransactionRate:     transactionRate,
+		SuccTransactions:    succTransactions,
+		FailTransactions:    failTransactions,
+		TimeOutTransactions: timeOutTransactions,
+		DataTransferred:     dataTransferred,
+		Throughput:          throughput,
+		RecvBytes:           recvBytes,
+		TotalCostTime:       totalCostTime,
+		TotalRealCostTime:   totalRealCostTime,
 	}
 
-	return res
+	return res, nil
 }

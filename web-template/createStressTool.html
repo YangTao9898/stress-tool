@@ -52,9 +52,9 @@
         </div>
         <span id="response-detail">
             <div class="input-group input-group-lg  top-pad-1">
-                <span class="input-group-addon">读取超时时间（ms）<span class="must-fill">*</span></span>
+                <span class="input-group-addon">读取超时时间（ms）</span>
                 <span class="input-group-addon error hidden" id="readTimeoutErr">error</span>
-                <input type="text" class="form-control" id="readTimeout" aria-describedby="sizing-addon1">
+                <input type="text" class="form-control" id="readTimeout" aria-describedby="sizing-addon1" placeholder="10000">
             </div>
             <div class="input-group input-group-lg  top-pad-1">
                 <span class="input-group-addon">期望返回字节数（Byte）</span>
@@ -88,7 +88,7 @@
                 <input type="text" class="form-control" id="repeatTime" aria-describedby="sizing-addon1">
             </div>
             <div class="input-group input-group-lg  top-pad-1">
-                <span class="input-group-addon">重复发送间隔（ms）<span class="must-fill">*</span></span>
+                <span class="input-group-addon">重复发送间隔（ms）</span>
                 <span class="input-group-addon error hidden" id="intervalTimeErr">error</span>
                 <input type="text" class="form-control" id="intervalTime" aria-describedby="sizing-addon1">
             </div>
@@ -444,10 +444,6 @@
                             if (strs[i] == "1011") {
                                 $("#repeatTimeErr").text("非法字符或数字超出范围")
                                 $("#repeatTimeErr").removeClass("hidden")
-                            }
-                            if (strs[i] == "1012") {
-                                $("#intervalTimeErr").text("不能为空")
-                                $("#intervalTimeErr").removeClass("hidden")
                             }
                             if (strs[i] == "1013") {
                                 $("#intervalTimeErr").text("非法字符或数字超出范围")

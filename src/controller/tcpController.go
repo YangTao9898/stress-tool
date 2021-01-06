@@ -10,19 +10,20 @@ import (
 )
 
 // 向外导出的方法变量字典
-var TcpControllerMethodHandleMap map[string]func([]byte)interface{}
+var TcpControllerMethodHandleMap map[string]func([]byte) interface{}
 var log *go_logger.Logger
 
-func init()  {
+func init() {
 	log = util.GetLogger()
 	// 容量会自增长
-	TcpControllerMethodHandleMap = make(map[string]func([]byte)interface{}, 0)
+	TcpControllerMethodHandleMap = make(map[string]func([]byte) interface{}, 0)
 	// 增加的方法要注册到 TcpControllerMethodHandleMap 列表中
 	TcpControllerMethodHandleMap["/TestConnectivity"] = TestConnectivity
 	TcpControllerMethodHandleMap["/CreateTask"] = CreateTask
 	TcpControllerMethodHandleMap["/GetAllTaskDesc"] = GetAllTaskDesc
 	TcpControllerMethodHandleMap["/GetTaskDetail"] = GetTaskDetail
 	TcpControllerMethodHandleMap["/GetStrBytes"] = GetStrBytes
+	TcpControllerMethodHandleMap["/StartTask"] = StartTask
 }
 
 func TestConnectivity(request []byte) interface{} {
@@ -39,14 +40,14 @@ func TestConnectivity(request []byte) interface{} {
 
 	result := tcp.TestConnectivity(req.TargetAddress, req.TargetPort)
 	var msg string
-	if (result) {
+	if result {
 		msg = "连接测试成功"
 	} else {
 		msg = "连接失败，请检查地址和端口"
 	}
 	return util.ResponseSuccPack(gin.H{
 		"result": result,
-		"msg": msg,
+		"msg":    msg,
 	})
 }
 
@@ -69,7 +70,7 @@ func CreateTask(request []byte) interface{} {
 	return util.ResponseSuccPack("创建任务成功")
 }
 
-func GetAllTaskDesc(request []byte) interface{}  {
+func GetAllTaskDesc(request []byte) interface{} {
 	var req model.GetAllTaskDescRequest
 	req.State = -1 // 默认 -1
 	err := json.Unmarshal(request, &req)
@@ -82,7 +83,7 @@ func GetAllTaskDesc(request []byte) interface{}  {
 }
 
 func GetTaskDetail(request []byte) interface{} {
-	var req model.GetTaskDetailRequest
+	var req model.TaskIdParamRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
 		log.Error(err.Error())
@@ -93,20 +94,28 @@ func GetTaskDetail(request []byte) interface{} {
 	if taskDealData == nil {
 		return util.ResponseFailPack("该压测任务不存在")
 	}
-
-	return util.ResponseSuccPack(taskDealData)
+	response, err := model.TaskDealDataToGetTaskDetailResponse(*taskDealData)
+	if err != nil {
+		return util.ResponseFailPack(err.Error())
+	}
+	return util.ResponseSuccPack(response)
 }
 
 func GetStrBytes(request []byte) interface{} {
 	return len(request)
 }
 
-
-
-
-
-
-
-
-
-
+func StartTask(request []byte) interface{} {
+	var req model.TaskIdParamRequest
+	err := json.Unmarshal(request, &req)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseFailPack(err.Error())
+	}
+	err = tcp.StartTask(req.TaskId)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseFailPack(err.Error())
+	}
+	return util.ResponsePack(util.RESULT_OK, "任务开始执行...", nil)
+}
