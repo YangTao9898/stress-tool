@@ -382,6 +382,9 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 	/*requestAverageResponseTime := "-"
 	requestResponseMaxTime := "-"
 	requestResponseMinTime := "-"*/
+	threadAverageCostTime := "-"
+	threadCostMaxTime := "-"
+	threadCostMinTIme := "-"
 	transactionRate := "-"
 	succTransactions := "-"
 	failTransactions := "-"
@@ -414,6 +417,9 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 			requestResponseMinTime = strconv.FormatFloat(util.RoundFloat64(data.RequestResponseMinTime, 2), 'f', -1, 64) + " ms"*/
 			transactionRate = strconv.FormatFloat(util.RoundFloat64(data.TransactionRate, 2), 'f', -1, 64) + " req/s"
 		}
+		threadAverageCostTime = strconv.FormatFloat(util.RoundFloat64(data.ThreadAverageCostTime, 2), 'f', -1, 64) + " ms"
+		threadCostMaxTime = strconv.FormatInt(data.ThreadCostMaxTime, 10) + " ms"
+		threadCostMinTIme = strconv.FormatInt(data.ThreadCostMinTime, 10) + " ms"
 	}
 
 	dataMapArr := make([]GetTaskDetailDataMap, len(data.DataTypeMap))
@@ -467,16 +473,34 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 		/*RequestAverageResponseTime: requestAverageResponseTime,
 		RequestResponseMaxTime:     requestResponseMaxTime,
 		RequestResponseMinTime:     requestResponseMinTime,*/
-		TransactionRate:     transactionRate,
-		SuccTransactions:    succTransactions,
-		FailTransactions:    failTransactions,
-		TimeOutTransactions: timeOutTransactions,
-		DataTransferred:     dataTransferred,
-		Throughput:          throughput,
-		RecvBytes:           recvBytes,
-		TotalCostTime:       totalCostTime,
-		TotalRealCostTime:   totalRealCostTime,
+		ThreadAverageCostTime: threadAverageCostTime,
+		ThreadCostMaxTime:     threadCostMaxTime,
+		ThreadCostMinTime:     threadCostMinTIme,
+		TransactionRate:       transactionRate,
+		SuccTransactions:      succTransactions,
+		FailTransactions:      failTransactions,
+		TimeOutTransactions:   timeOutTransactions,
+		DataTransferred:       dataTransferred,
+		Throughput:            throughput,
+		RecvBytes:             recvBytes,
+		TotalCostTime:         totalCostTime,
+		TotalRealCostTime:     totalRealCostTime,
 	}
 
 	return res, nil
+}
+
+func ToDescFromSaveTcpTaskFileItem(item []*SaveTcpTaskFileItem) []SaveTcpTaskFileDesc {
+	var resArr []SaveTcpTaskFileDesc
+	for i := len(item) - 1; i >= 0; i-- {
+		var desc SaveTcpTaskFileDesc
+		desc.SaveTaskId = (*item[i]).SaveTaskId
+		desc.SaveTaskTag = (*item[i]).SaveTaskTag
+		desc.SaveTime = (*item[i]).SaveTime
+		desc.TargetAddress = (*item[i]).TaskData.TargetAddress
+		desc.TargetPort = (*item[i]).TaskData.TargetPort
+		desc.ThreadNum = (*item[i]).TaskData.ThreadNum
+		resArr = append(resArr, desc)
+	}
+	return resArr
 }

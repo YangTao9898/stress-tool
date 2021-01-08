@@ -102,6 +102,18 @@
                                 <td id="detailRequestResponseMinTime">ssss</td>
                             </tr>*/}}
                             <tr>
+                                <td>线程执行完的平均时间（ms）</td>
+                                <td id="detailThreadAverageCostTime">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单个线程执行完的最大时间（ms）</td>
+                                <td id="detailThreadCostMaxTime">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>单个线程执行完的最小时间（ms）</td>
+                                <td id="detailThreadCostMinTime">ssss</td>
+                            </tr>
+                            <tr>
                                 <td>每秒处理请求数</td>
                                 <td id="detailTransactionRate">ssss</td>
                             </tr>
@@ -130,8 +142,12 @@
                                 <td id="recvBytes">ssss</td>
                             </tr>
                             <tr>
-                                <td>花费总时间（ms）</td>
+                                <td>花费总时间（ms）（平均值以此值计算）</td>
                                 <td id="detailTotalCostTime">ssss</td>
+                            </tr>
+                            <tr>
+                                <td>花费实际时间（ms）（算上最后一次读取超时时间）</td>
+                                <td id="detailTotalRealCostTime">ssss</td>
                             </tr>
                             </tbody>
                         </table>
@@ -250,9 +266,12 @@
                     $("#detailRequestAverageCostTime").text(data.requestAverageCostTime)
                     $("#detailRequestCostMaxTime").text(data.requestCostMaxTime)
                     $("#detailRequestCostMinTime").text(data.requestCostMinTime)
-                    $("#detailRequestAverageResponseTime").text(data.requestAverageResponseTime)
+                    /*$("#detailRequestAverageResponseTime").text(data.requestAverageResponseTime)
                     $("#detailRequestResponseMaxTime").text(data.requestResponseMaxTime)
-                    $("#detailRequestResponseMinTime").text(data.requestResponseMinTime)
+                    $("#detailRequestResponseMinTime").text(data.requestResponseMinTime)*/
+                    $("#detailThreadAverageCostTime").text(data.threadAverageCostTime)
+                    $("#detailThreadCostMaxTime").text(data.threadCostMaxTime)
+                    $("#detailThreadCostMinTime").text(data.threadCostMinTime)
                     $("#detailTransactionRate").text(data.transactionRate)
                     $("#detailSuccTransactions").text(data.succTransactions)
                     $("#detailFailTransactions").text(data.failTransactions)
@@ -261,6 +280,7 @@
                     $("#recvBytes").text(data.recvBytes)
                     $("#detailThroughput").text(data.throughput)
                     $("#detailTotalCostTime").text(data.totalCostTime)
+                    $("#detailTotalRealCostTime").text(data.totalRealCostTime)
 
                     var sendData = data.dataMapArr
                     for (var i = 0, length = sendData.length; i < length; i++) {

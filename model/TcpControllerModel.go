@@ -63,13 +63,32 @@ type GetTaskDetailResponse struct {
 	//RequestAverageResponseTime string `json:"requestAverageResponseTime"` // 单次请求响应的平均时间
 	//RequestResponseMaxTime     string `json:"requestResponseMaxTime"` // 单次请求最大响应时间
 	//RequestResponseMinTime     string `json:"requestResponseMinTime"` // 单次请求最小响应时间
-	TransactionRate     string `json:"transactionRate"`     // 每秒处理请求
-	SuccTransactions    string `json:"succTransactions"`    // 请求成功数
-	FailTransactions    string `json:"failTransactions"`    // 请求失败数
-	TimeOutTransactions string `json:"timeOutTransactions"` // 请求超时数
-	DataTransferred     string `json:"dataTransferred"`     // 总传输数据量
-	Throughput          string `json:"throughput"`          // 每秒钟传输的数据量，吞吐量
-	RecvBytes           string `json:"recvBytes"`           // 接收的总数据量
-	TotalCostTime       string `json:"totalCostTime"`       // 不算失败数，总花费时间 ms
-	TotalRealCostTime   string `json:"totalRealCostTime"`   // 实际花费时间
+	ThreadAverageCostTime string `json:"threadAverageCostTime"` // 线程执行完花费的平均时间
+	ThreadCostMaxTime     string `json:"threadCostMaxTime"`     // 单个线程执行完花费的最大时间
+	ThreadCostMinTime     string `json:"threadCostMinTime"`     // 单个线程执行完花费的最小时间
+	TransactionRate       string `json:"transactionRate"`       // 每秒处理请求
+	SuccTransactions      string `json:"succTransactions"`      // 请求成功数
+	FailTransactions      string `json:"failTransactions"`      // 请求失败数
+	TimeOutTransactions   string `json:"timeOutTransactions"`   // 请求超时数
+	DataTransferred       string `json:"dataTransferred"`       // 总传输数据量
+	Throughput            string `json:"throughput"`            // 每秒钟传输的数据量，吞吐量
+	RecvBytes             string `json:"recvBytes"`             // 接收的总数据量
+	TotalCostTime         string `json:"totalCostTime"`         // 不算失败数，总花费时间 ms
+	TotalRealCostTime     string `json:"totalRealCostTime"`     // 实际花费时间
+}
+
+type SaveTcpTaskFileItem struct {
+	SaveTaskId  string            `json:"saveTaskId"`
+	SaveTaskTag string            `json:"saveTaskTag"`
+	SaveTime    string            `json:"saveTime"`
+	TaskData    CreateTaskRequest `json:"taskData"`
+}
+
+type SaveTcpTaskFileDesc struct {
+	SaveTaskId    string `json:"saveTaskId"`
+	SaveTaskTag   string `json:"saveTaskTag"`
+	SaveTime      string `json:"saveTime"`
+	TargetAddress string `json:"targetAddress"`
+	TargetPort    string `json:"targetPort"`
+	ThreadNum     string `json:"threadNum"`
 }

@@ -22,15 +22,39 @@ func ListChildWholeFileName(folderPath string) ([]string, error) {
 	var nameArr []string
 	var path string
 	length := len(folderPath)
-	if folderPath[length - 1] == '/' && length > 1  {
-		path = folderPath[:len(folderPath) - 2]
+	if folderPath[length-1] == '/' && length > 1 {
+		path = folderPath[:len(folderPath)-2]
 	} else {
 		path = folderPath
 	}
 	for _, f := range files {
 		if !f.IsDir() {
-			nameArr = append(nameArr, path + "/" + f.Name())
+			nameArr = append(nameArr, path+"/"+f.Name())
 		}
 	}
 	return nameArr, nil
+}
+
+func FolderExists(path string) (bool, error) {
+	file, err := os.Stat(path)
+	if err == nil {
+		if file.IsDir() {
+			return true, nil
+		}
+	}
+	return false, err
+}
+
+/**
+  err 不为空的情况，可能是没权限等等
+*/
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

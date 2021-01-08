@@ -69,16 +69,19 @@ type TaskDealData struct {
 	//RequestAverageResponseTime float64 `json:"requestAverageResponseTime"` // 单次请求响应的平均时间
 	//RequestResponseMaxTime     float64 `json:"requestResponseMaxTime"` // 单次请求最大响应时间
 	//RequestResponseMinTime     float64 `json:"requestResponseMinTime"` // 单次请求最小响应时间
-	TransactionRate     float64 `json:"transactionRate"`     // 每秒处理请求
-	SuccTransactions    int     `json:"succTransactions"`    // 请求成功数
-	FailTransactions    int     `json:"failTransactions"`    // 请求失败数
-	TimeOutTransactions int     `json:"timeOutTransactions"` // 请求超时数
-	DataTransferred     int     `json:"dataTransferred"`     // 总传输数据量
-	SendBytes           int     `json:"sendBytes"`
-	RecvBytes           int     `json:"recvBytes"`
-	Throughput          float64 `json:"throughput"`        // 每秒钟传输的数据量，吞吐量
-	TotalCostTime       float64 `json:"totalCostTime"`     // 总花费时间 ms，不算最后一次等待的超时时间
-	TotalRealCostTime   float64 `json:"totalRealCostTime"` // 实际花费时间
+	ThreadAverageCostTime float64 `json:"threadAverageCostTime"` // 线程执行完花费的平均时间
+	ThreadCostMaxTime     int64   `json:"threadCostMaxTime"`     // 单个线程执行完花费的最大时间
+	ThreadCostMinTime     int64   `json:"threadCostMinTime"`     // 单个线程执行完花费的最小时间
+	TransactionRate       float64 `json:"transactionRate"`       // 每秒处理请求
+	SuccTransactions      int     `json:"succTransactions"`      // 请求成功数
+	FailTransactions      int     `json:"failTransactions"`      // 请求失败数
+	TimeOutTransactions   int     `json:"timeOutTransactions"`   // 请求超时数
+	DataTransferred       int     `json:"dataTransferred"`       // 总传输数据量
+	SendBytes             int     `json:"sendBytes"`
+	RecvBytes             int     `json:"recvBytes"`
+	Throughput            float64 `json:"throughput"`        // 每秒钟传输的数据量，吞吐量
+	TotalCostTime         float64 `json:"totalCostTime"`     // 总花费时间 ms，不算最后一次等待的超时时间
+	TotalRealCostTime     float64 `json:"totalRealCostTime"` // 实际花费时间
 }
 type TaskDealDataDescript struct {
 	TaskId        string `json:"taskId"`

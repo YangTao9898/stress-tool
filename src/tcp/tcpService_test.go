@@ -9,110 +9,6 @@ import (
 	"time"
 )
 
-var testValues [][]map[string]int
-var testResult []bool
-
-func addTestItem(dataTypeMap map[string]int, result bool) {
-	arr := make([]map[string]int, len(dataTypeMap))
-	index := 0
-	for k, v := range dataTypeMap {
-		m := make(map[string]int, 1)
-		m[k] = v
-		arr[index] = m
-		index++
-	}
-	testValues = append(testValues, arr)
-	testResult = append(testResult, result)
-}
-
-func TestCheckDataRangeIsContinuous(t *testing.T) {
-	addTestItem(map[string]int{
-		"0~3":   model.STRING,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, true)
-	addTestItem(map[string]int{
-		"1~3":   model.STRING,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"-1~3":  model.STRING,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"3~0":   model.STRING,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"3~0":   model.STRING,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~3":   model.STRING,
-		"4~-12": model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~3":   model.STRING,
-		"4~12":  model.STRING,
-		"11~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~11":  model.STRING,
-		"12~12": model.STRING,
-		"13~20": model.STRING,
-	}, true)
-	addTestItem(map[string]int{
-		"0~4":   model.NUMBER,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~4":   model.FLOAT,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~4":   model.FLOAT,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~a":   model.FLOAT,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0ss":   model.FLOAT,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-	addTestItem(map[string]int{
-		"0~2~3": model.FLOAT,
-		"4~12":  model.STRING,
-		"13~20": model.STRING,
-	}, false)
-
-	i := 0
-	var msg string
-	for length := len(testValues); i < length; i++ {
-		m := testValues[i]
-		_, msg = CheckDataRangeIsContinuous(m)
-		expected := ""
-		if !testResult[i] {
-			expected = "Not null string"
-		}
-		t.Logf("Test CheckDataRangeIsContinuous: param: [%v], expected: [%s], get: [%s]", m, expected, msg)
-		if msg == "" && !testResult[i] || msg != "" && testResult[i] {
-			t.Errorf("TestCheckDataRangeIsContinuous fail")
-		}
-	}
-}
-
 func TestCreateTask(t *testing.T) {
 	data := model.CreateTaskData{
 		TargetAddress: "localhost",
@@ -229,7 +125,7 @@ func TestStartSingleThread(t *testing.T) {
 	var outCdata countData
 	var outBool bool
 	fmt.Println("start StartSingleThread...")
-	go StartSingleThread(data, &outCdata, &outBool, ch)
+	go startSingleThread(data, &outCdata, &outBool, ch)
 	<-ch
 	<-ch2
 	<-ch1
@@ -347,50 +243,4 @@ func TestStartTask(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-}
-
-func TestConvertTaskDealDataToJson(t *testing.T) {
-	cdata := model.CreateTaskData{
-		TargetAddress: "localhost",
-		TargetPort:    "8080",
-		Timeout:       10000,
-		ReadTimeout:   1000,
-		ExpectedBytes: 32,
-		ThreadNum:     5,
-		IsRepeat:      false,
-		RepeatTime:    0,
-		IntervalTime:  0,
-		HasResponse:   true,
-		DataTypeMap: []map[string]int{
-			{"0~999999": 2},
-		},
-		Data: []byte("xxxxxxxxxx"),
-	}
-	td := model.TaskDealData{
-		CreateTaskData:             cdata,
-		Taskid:                     "20201126093420",
-		State:                      3,
-		StartTime:                  "2020-11-26 09:34:20",
-		EndTime:                    "2020-11-26 09:34:21",
-		TotalRequestCount:          100,
-		RequestAverageCostTime:     0.12,
-		RequestCostMaxTime:         2,
-		RequestCostMinTime:         0,
-		RequestAverageResponseTime: 0.01,
-		RequestResponseMaxTime:     1,
-		RequestResponseMinTime:     0,
-		TransactionRate:            8333.333333333334,
-		SuccTransactions:           100,
-		FailTransactions:           0,
-		TimeOutTransactions:        0,
-		DataTransferred:            9900032,
-		Throughput:                 825002666.6666666,
-		TotalCostTime:              12,
-	}
-
-	s, e := ConvertTaskDealDataToJson(td)
-	if e != nil {
-		t.Error(e)
-	}
-	fmt.Println("ConvertTaskDealDataToJson result:", s)
 }
