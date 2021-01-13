@@ -1,6 +1,6 @@
 {{define "createStressTool"}}
     <!-- 创建测试任务 -->
-    <div>
+    <div id="createStressTool">
         <div style="display: inline-block; max-width: 40%">
             <div class="input-group input-group-lg top-pad-1" >
                 <span class="input-group-addon">测试机器IP或域名<span class="must-fill">*</span></span>
@@ -101,7 +101,20 @@
         <span id="input-data-parent">
         </span>
         <div class="input-group input-group-lg top-pad-1">
-            <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="createTask()">创建任务</button>
+            <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="createTaskOrSave(true)">创建任务</button>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="saveTaskBtnClick()">存储任务</button>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="">查询任务</button>
+        </div>
+        <!-- 存储任务要输入的名称 -->
+        <div id="saveTaskBox" style="display: none; position: fixed; top: 32%; left: 35%; z-index: 20; height: 25%; width: 22%; border-radius: 20px; background-color: white;">
+            <div class="input-group input-group-lg" style="position: relative; top: 18%; padding: 10px;">
+                <span class="input-group-addon">任务别名</span>
+                <input type="text" class="form-control" id="saveTaskTag" aria-describedby="sizing-addon1">
+            </div>
+            <div class="input-group input-group-lg" style="position: relative; top: 25%; padding: 10px; display: flex; justify-content: center;">
+                <button type="button" class="btn btn-default btn-lg" onclick="saveTaskBoxConfirm()">保存</button>
+                <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="saveTaskBoxCancel()">取消</button>
+            </div>
         </div>
     </div>
     <script>
@@ -251,7 +264,7 @@
 
             var inputData = $(p).find(".input-data-data")[0]
             //$(inputData).unbind('input', computeBytes)
-            $(inputData).unbind('input')
+            $(inputData).unbind('blur')
         }
 
         function inputDataFloatChose(obj) {
@@ -304,7 +317,7 @@
             var lastValue = inputData.value
             $(inputData).bind('blur', function () {
                 // input值未变时，不发送请求
-                if (lastValue != inputData.value) {
+                if (lastValue != inputData.value || $(inputLength).val() == "") {
                     lastValue = inputData.value
                     $.ajax({
                         url: "/GetStrBytes",
@@ -331,7 +344,24 @@
             $("#repeatTimeErr").addClass("hidden")
             $("#intervalTimeErr").addClass("hidden")
         }
-        function createTask() {
+
+        function saveTaskBtnClick() {
+            $.maskShow($("#createStressTool"), 10)
+            $("#saveTaskBox").show()
+        }
+
+        function saveTaskBoxCancel() {
+            $.maskRemove()
+            $("#saveTaskBox").hide()
+            $("#saveTaskTag").val("")
+        }
+        
+        function saveTaskBoxConfirm() {
+            createTaskOrSave(false)
+        }
+
+        // createTaskFlag: true 为创建任务，false 为存储任务
+        function createTaskOrSave(createTaskFlag) {
             clearAllErr()
             // 读取数据
             var targetAddress = $("#targetAddress").val()
@@ -377,23 +407,32 @@
                 inputDataMap.push(obj)
             }
 
+            var sendData = {
+                "targetAddress": targetAddress,
+                "targetPort": targetPort,
+                "timeout": timeout,
+                "threadNum": threadNum,
+                "hasResponse": hasResponse,
+                "readTimeout": readTimeout,
+                "expectedBytes": expectedBytes,
+                "isRepeat": isRepeatSend,
+                "repeatTime": repeatTime,
+                "intervalTime": intervalTime,
+                "dataMapArr": inputDataMap
+            }
+            if (!createTaskFlag) {
+                // 存储任务
+                var saveTaskTag = $("#saveTaskTag").val()
+                sendData.saveTaskTag = saveTaskTag
+                $.maskRemove()
+                $("#saveTaskBox").hide()
+                $("#saveTaskTag").val("")
+            }
             $.loadingStart()
             $.ajax({
-                url: "/CreateTask",
+                url: createTaskFlag ? "/CreateTask" : "/SaveTask",
                 type: "POST",
-                data: JSON.stringify({
-                    "targetAddress": targetAddress,
-                    "targetPort": targetPort,
-                    "timeout": timeout,
-                    "threadNum": threadNum,
-                    "hasResponse": hasResponse,
-                    "readTimeout": readTimeout,
-                    "expectedBytes": expectedBytes,
-                    "isRepeat": isRepeatSend,
-                    "repeatTime": repeatTime,
-                    "intervalTime": intervalTime,
-                    "dataMapArr": inputDataMap
-                }),
+                data: JSON.stringify(sendData),
                 dataType: "json",
                 contentType: "application/json",
                 success: function(data) {

@@ -495,7 +495,7 @@ func ToDescFromSaveTcpTaskFileItem(item []*SaveTcpTaskFileItem) []SaveTcpTaskFil
 	for i := len(item) - 1; i >= 0; i-- {
 		var desc SaveTcpTaskFileDesc
 		desc.SaveTaskId = (*item[i]).SaveTaskId
-		desc.SaveTaskTag = (*item[i]).SaveTaskTag
+		desc.SaveTaskTag = (*item[i]).TaskData.SaveTaskTag
 		desc.SaveTime = (*item[i]).SaveTime
 		desc.TargetAddress = (*item[i]).TaskData.TargetAddress
 		desc.TargetPort = (*item[i]).TaskData.TargetPort

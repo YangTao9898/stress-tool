@@ -87,6 +87,31 @@ $.loadingEnd = function () {
     $("#global-load-div").remove()
 }
 
+// parent 为 mask 的父对象， z_index 为层级
+$.maskShow = function (parent, z_index) {
+    var p = document.body
+    var zIndex = 1
+    if (z_index != "" && z_index != null) {
+        zIndex = z_index
+    }
+    if (parent != null) {
+        p = parent
+    }
+    var node = `
+    <div id="global-mask-div">
+        <div class="modal-backdrop show" style="opacity:.5; z-index: ` + zIndex + `;">
+        </div>
+        </div>
+    </div>
+    `
+    $("#global-mask-div").remove()
+    $(p).append($(node))
+}
+
+$.maskRemove = function () {
+    $("#global-mask-div").remove()
+}
+
 /**
  * 打印 json 对象 data 是否是服务器正常的返回结果，如果不正常且为通用错误码则弹出错误框
  * @param data

@@ -22,6 +22,7 @@ type CreateTaskRequest struct {
 		Data     string `json:"data"`     // 数据
 		IsBigEnd bool   `json:"isBigEnd"` // 数据大小端标志, true为大端，false为小端
 	} `json:"dataMapArr"`
+	SaveTaskTag string `json:"saveTaskTag"` // 存储任务名称
 }
 
 type GetAllTaskDescRequest struct {
@@ -78,10 +79,9 @@ type GetTaskDetailResponse struct {
 }
 
 type SaveTcpTaskFileItem struct {
-	SaveTaskId  string            `json:"saveTaskId"`
-	SaveTaskTag string            `json:"saveTaskTag"`
-	SaveTime    string            `json:"saveTime"`
-	TaskData    CreateTaskRequest `json:"taskData"`
+	SaveTaskId string            `json:"saveTaskId"`
+	SaveTime   string            `json:"saveTime"`
+	TaskData   CreateTaskRequest `json:"taskData"`
 }
 
 type SaveTcpTaskFileDesc struct {
@@ -91,4 +91,12 @@ type SaveTcpTaskFileDesc struct {
 	TargetAddress string `json:"targetAddress"`
 	TargetPort    string `json:"targetPort"`
 	ThreadNum     string `json:"threadNum"`
+}
+
+type SaveTaskIdStruct struct {
+	SaveTaskId string `json:"saveTaskId"`
+}
+
+type SaveTaskIdArrStruct struct {
+	SaveTaskIdArr []string `json:"saveTaskIdArr"`
 }

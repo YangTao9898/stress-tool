@@ -20,7 +20,10 @@ var tcpTaskFileLock sync.Mutex
 var tcpTaskFileMap map[string]*model.SaveTcpTaskFileItem
 var tcpTaskFileArr []*model.SaveTcpTaskFileItem
 
-const tcpTaskFilePath = "./web-template/save/tcpTask.txt"
+const (
+	tcpTaskFilePath    = "./web-template/save/tcpTask.txt"
+	tcpTaskTmpFilePath = "./web-template/save/.tcpTask.tmp.txt"
+)
 
 func init() {
 	log = util.GetLogger()
@@ -35,6 +38,8 @@ func init() {
 	TcpControllerMethodHandleMap["/StartTask"] = StartTask
 	TcpControllerMethodHandleMap["/SaveTask"] = SaveTask
 	TcpControllerMethodHandleMap["/GetSaveTaskDesc"] = GetSaveTaskDesc
+	TcpControllerMethodHandleMap["/GetSaveTaskDetail"] = GetSaveTaskDetail
+	TcpControllerMethodHandleMap["/DeleteSaveTask"] = DeleteSaveTask
 }
 
 // 如未初始化相关变量则初始化
@@ -42,6 +47,7 @@ func init() {
 func initTcpTaskFile() error {
 	if tcpTaskFileMap == nil {
 		tcpTaskFileMap = make(map[string]*model.SaveTcpTaskFileItem)
+		tcpTaskFileArr = make([]*model.SaveTcpTaskFileItem, 0)
 		// 从文件中加载
 		file, err := os.OpenFile(tcpTaskFilePath, os.O_APPEND|os.O_CREATE, 0644)
 		defer file.Close()
@@ -198,10 +204,9 @@ func SaveTask(request []byte) interface{} {
 	saveTime := time.Now()
 	saveTaskId := util.GetDateToStrWithMillisecond(saveTime)
 	saveTaskData := model.SaveTcpTaskFileItem{
-		SaveTaskId:  saveTaskId,
-		SaveTaskTag: "",
-		SaveTime:    util.GetDateToStr(saveTime, util.TIME_TEMPLATE_1),
-		TaskData:    req,
+		SaveTaskId: saveTaskId,
+		SaveTime:   util.GetDateToStr(saveTime, util.TIME_TEMPLATE_1),
+		TaskData:   req,
 	}
 	bytes, err := json.Marshal(saveTaskData)
 	_, err = file.WriteString(string(bytes) + "\n")
@@ -224,4 +229,96 @@ func GetSaveTaskDesc(request []byte) interface{} {
 	}
 	resArr := model.ToDescFromSaveTcpTaskFileItem(tcpTaskFileArr)
 	return util.ResponseSuccPack(resArr)
+}
+
+func GetSaveTaskDetail(request []byte) interface{} {
+	tcpTaskFileLock.Lock()
+	defer tcpTaskFileLock.Unlock()
+	err := initTcpTaskFile()
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseSuccPack("加载保存的任务失败")
+	}
+
+	var req model.SaveTaskIdStruct
+	err = json.Unmarshal(request, &req)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseSuccPack("加载保存的任务失败")
+	}
+	if item, ok := tcpTaskFileMap[req.SaveTaskId]; ok {
+		return util.ResponseSuccPack(item)
+	} else {
+		return util.ResponseFailPack("该保存的任务不存在")
+	}
+}
+
+func DeleteSaveTask(request []byte) interface{} {
+	var arr model.SaveTaskIdArrStruct
+	err := json.Unmarshal(request, &arr)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseSuccPack("删除保任务失败")
+	}
+	if arr.SaveTaskIdArr == nil || len(arr.SaveTaskIdArr) == 0 {
+		return util.ResponseFailPack("没有要删除的保存任务")
+	}
+
+	tcpTaskFileLock.Lock()
+	defer tcpTaskFileLock.Unlock()
+	// 删除 map 中对应的任务
+	for _, v := range arr.SaveTaskIdArr {
+		delete(tcpTaskFileMap, v)
+	}
+
+	succ := false
+	defer func() {
+		if !succ {
+			tcpTaskFileMap = nil
+		}
+	}()
+	// 将数据写入临时文件中
+	file, err := os.OpenFile(tcpTaskTmpFilePath, os.O_APPEND|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		file.Close()
+		log.Error(err.Error())
+		return util.ResponseFailPack("删除保存任务失败")
+	}
+
+	var tempArr []*model.SaveTcpTaskFileItem
+	// 删除 arr 中对应的任务
+	for _, v := range tcpTaskFileArr {
+		if _, ok := tcpTaskFileMap[v.SaveTaskId]; ok {
+			tempArr = append(tempArr, v)
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				file.Close()
+				log.Error(err.Error())
+				return util.ResponseFailPack("删除保存任务失败")
+			}
+			_, err = file.WriteString(string(bytes) + "\n")
+			if err != nil {
+				file.Close()
+				log.Error(err.Error())
+				return util.ResponseFailPack("删除保存任务失败")
+			}
+		}
+	}
+	tcpTaskFileArr = tempArr
+
+	file.Close()
+	// 将原文件删除.用临时文件替换
+	err = os.Remove(tcpTaskFilePath)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseFailPack("删除保存任务失败")
+	}
+	err = os.Rename(tcpTaskTmpFilePath, tcpTaskFilePath)
+	if err != nil {
+		log.Error(err.Error())
+		return util.ResponseFailPack("删除保存任务失败")
+	}
+
+	succ = true
+	return util.ResponseSuccPack("删除保存任务成功")
 }
