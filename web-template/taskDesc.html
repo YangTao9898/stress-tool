@@ -2,15 +2,11 @@
     <div>
         <div class="list-group" id="task-desc-list">
         </div>
-        <span id="taskDetailParent">
+        <span id="taskDetailParent" style="display: none;">
             {{template "taskDetail" .}}
         </span>
     </div>
     <script>
-        $(function () {
-            $("#taskDetailParent").hide()
-        })
-
         const notStart = 0
         const ready = 1
         const running = 2

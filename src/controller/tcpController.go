@@ -237,17 +237,17 @@ func GetSaveTaskDetail(request []byte) interface{} {
 	err := initTcpTaskFile()
 	if err != nil {
 		log.Error(err.Error())
-		return util.ResponseSuccPack("加载保存的任务失败")
+		return util.ResponseFailPack("加载保存的任务失败")
 	}
 
 	var req model.SaveTaskIdStruct
 	err = json.Unmarshal(request, &req)
 	if err != nil {
 		log.Error(err.Error())
-		return util.ResponseSuccPack("加载保存的任务失败")
+		return util.ResponseFailPack("加载保存的任务失败")
 	}
 	if item, ok := tcpTaskFileMap[req.SaveTaskId]; ok {
-		return util.ResponseSuccPack(item)
+		return util.ResponseSuccPack(*item)
 	} else {
 		return util.ResponseFailPack("该保存的任务不存在")
 	}

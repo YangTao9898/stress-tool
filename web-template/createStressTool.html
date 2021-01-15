@@ -103,18 +103,23 @@
         <div class="input-group input-group-lg top-pad-1">
             <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="createTaskOrSave(true)">创建任务</button>
             <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="saveTaskBtnClick()">存储任务</button>
-            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="">查询任务</button>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="querySaveTaskClick()">查询任务</button>
         </div>
         <!-- 存储任务要输入的名称 -->
-        <div id="saveTaskBox" style="display: none; position: fixed; top: 32%; left: 35%; z-index: 20; height: 25%; width: 22%; border-radius: 20px; background-color: white;">
+        <div id="saveTaskBox" style="display: none; position: fixed; top: 32%; left: 35%; z-index: 20; height: 25%; width: 22%; border-radius: 20px; background-color: whitesmoke;">
             <div class="input-group input-group-lg" style="position: relative; top: 18%; padding: 10px;">
                 <span class="input-group-addon">任务别名</span>
                 <input type="text" class="form-control" id="saveTaskTag" aria-describedby="sizing-addon1">
             </div>
             <div class="input-group input-group-lg" style="position: relative; top: 25%; padding: 10px; display: flex; justify-content: center;">
-                <button type="button" class="btn btn-default btn-lg" onclick="saveTaskBoxConfirm()">保存</button>
+                <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="saveTaskBoxConfirm()">保存</button>
                 <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="saveTaskBoxCancel()">取消</button>
             </div>
+        </div>
+        <!-- 存储的任务列表 -->
+        <div id="saveTaskBoxList" style="display: none; position: fixed; top: 0; left: 0; right: 0; width: 60%; height: 95%; margin: 20px auto;
+                    background-color: whitesmoke; border-radius: 7px; z-index: 20; overflow: scroll; overflow-x: hidden; overflow-y: auto;">
+
         </div>
     </div>
     <script>
@@ -144,53 +149,53 @@
         }
 
         function getInputDataElement() {
-            return `\
-                <div class="input-data-top">\
-                    <input type="hidden" class="input-data-type">\
-                    <div style="display: inline-block; max-width: 30%">\
-                        <div class="input-group input-group-lg top-pad-1">\
-                            <!-- 类型按钮 -->\
-                            <div class="btn-group" style="float: left;">\
-                                <button type="button" class="btn btn-default dropdown-toggle btn-lg" data-toggle="dropdown"\
-                                    aria-haspopup="true" aria-expanded="false"  style="width: 160px;">\
-                                    <span class="dropdown-toggle-text">定义数据类型</span> <span class="caret"></span>\
-                                </button>\
-                                <ul class="dropdown-menu">\
-                                    <li><a onclick="inputDataIntChose(this)">Int数据</a></li>\
-                                    <li><a onclick="inputDataFloatChose(this)">Float数据</a></li>\
-                                    <li><a onclick="inputDataStringChose(this)">字符串数据</a></li>\
-                                    <li role="separator" class="divider"></li>\
-                                    <li><a >取消</a></li>\
-                                </ul>\
-                            </div>\
-                            <!-- 类型长度 -->\
-                            <span class="input-group-addon left-margin-1" style="float:left; width: 150px">长度（byte）<span class="must-fill">*</span></span>\
-                            <input type="text" class="form-control input-data-length" style="width: 150px; float: left" name="Data" aria-describedby="sizing-addon1">\
-                        </div>\
-                    </div>\
-                    <div style="display: inline-block; max-width: 50%">\
-                        <div class="input-group input-group-lg top-pad-1">\
-                            <!-- 数据 -->\
-                            <span class="input-group-addon left-margin-1">数据<span class="must-fill">*</span></span>\
-                            <input type="text" class="form-control input-data-data" name="Data" aria-describedby="sizing-addon1">\
-                        </div>\
-                    </div>\
-                    <!-- 大小端 -->\
-                    <div style="display: inline-block;" class="left-margin-2 input-data-num-end-parent">\
-                        <div class="input-group input-group-lg top-pad-1" style="height: 46px; font-size: 18px;">\
-                            <input type="checkbox" class="pointer input-data-num-end" id="inputDataNumEnd"
-                                onclick="inputDataNumEndClick(this)" checked>\
-                            <label class="pointer input-data-num-end-label" style="margin-left: 5px; font-weight: normal;" for="inputDataNumEnd"
-                                onclick="inputDataNumEndClick(this)">大端</label>\
-                        </div>\
-                    </div>\
-                    <div style="display: inline-block; max-width: 10%" class="left-margin-2">\
-                        <div class="input-group input-group-lg top-pad-1">\
-                            <!-- 数据 -->\
-                            <button style="display: inline-block;"\
-                                class="btn btn-default btn-lg" onclick="deleteElement(this)">删除</button>\
-                        </div>\
-                    </div>\
+            var uniqueId = $.getUniqueId()
+            return `
+                <div class="input-data-top">
+                    <input type="hidden" class="input-data-type">
+                    <div style="display: inline-block; max-width: 30%">
+                        <div class="input-group input-group-lg top-pad-1">
+                            <!-- 类型按钮 -->
+                            <div class="btn-group" style="float: left;">
+                                <button type="button" class="btn btn-default dropdown-toggle btn-lg" data-toggle="dropdown"
+                                    aria-haspopup="true" aria-expanded="false"  style="width: 160px;">
+                                    <span class="dropdown-toggle-text">定义数据类型</span> <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a onclick="inputDataIntChose(this)">Int数据</a></li>
+                                    <li><a onclick="inputDataFloatChose(this)">Float数据</a></li>
+                                    <li><a onclick="inputDataStringChose(this)">字符串数据</a></li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a >取消</a></li>
+                                </ul>
+                            </div>
+                            <!-- 类型长度 -->
+                            <span class="input-group-addon left-margin-1" style="float:left; width: 150px">长度（byte）<span class="must-fill">*</span></span>
+                            <input type="text" class="form-control input-data-length" style="width: 150px; float: left" name="Data" aria-describedby="sizing-addon1">
+                        </div>
+                    </div>
+                    <div style="display: inline-block; max-width: 50%">
+                        <div class="input-group input-group-lg top-pad-1">
+                            <!-- 数据 -->
+                            <span class="input-group-addon left-margin-1">数据<span class="must-fill">*</span></span>
+                            <input type="text" class="form-control input-data-data" name="Data" aria-describedby="sizing-addon1">
+                        </div>
+                    </div>
+                    <!-- 大小端 -->
+                    <div style="display: inline-block;" class="left-margin-2 input-data-num-end-parent">
+                        <div class="input-group input-group-lg top-pad-1" style="height: 46px; font-size: 18px;">
+                            <input type="checkbox" class="pointer input-data-num-end" id="inputDataNumEnd` + uniqueId + `"
+                                onclick="inputDataNumEndClick(this)" checked>
+                            <label class="pointer input-data-num-end-label" style="margin-left: 5px; font-weight: normal;" for="inputDataNumEnd` + uniqueId + `">大端</label>
+                        </div>
+                    </div>
+                    <div style="display: inline-block; max-width: 10%" class="left-margin-2">
+                        <div class="input-group input-group-lg top-pad-1">
+                            <!-- 数据 -->
+                            <button style="display: inline-block;"
+                                class="btn btn-default btn-lg" onclick="deleteElement(this)">删除</button>
+                        </div>
+                    </div>
                 </div>`
         }
 
@@ -346,7 +351,10 @@
         }
 
         function saveTaskBtnClick() {
-            $.maskShow($("#createStressTool"), 10)
+            $.maskShow($("#createStressTool"), 10, function () {
+                $.maskRemove()
+                $("#saveTaskBox").hide()
+            })
             $("#saveTaskBox").show()
         }
 
@@ -358,6 +366,204 @@
         
         function saveTaskBoxConfirm() {
             createTaskOrSave(false)
+        }
+
+        function saveTaskBoxListChooseAllClick() {
+            $(".saveTaskSignleChooseCheckbox").prop("checked", $("#saveTaskBoxListChooseAll").is(":checked"))
+        }
+
+        function deleteSaveTaskClick() {
+            var inputNodeArr = $(".saveTaskSignleChooseCheckbox")
+            var deleteSaveTaskIdArr = []
+            for (var i = 0, length = inputNodeArr.length; i < length; i++) {
+                var item = $(inputNodeArr[i])
+                if (item.is(":checked")) {
+                    deleteSaveTaskIdArr.push(item.next().val())
+                }
+            }
+            if (deleteSaveTaskIdArr.length == 0) {
+                $.showAlertBox("警告", "没有选取任何存储的任务，不能删除")
+                return;
+            }
+            $.showAlertBox("提示", "是否删除选中的存储任务？", false, function () {
+                $.loadingStart()
+                $.ajax({
+                    url: "/DeleteSaveTask",
+                    type: "POST",
+                    data: JSON.stringify({
+                        "saveTaskIdArr": deleteSaveTaskIdArr
+                    }),
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            return
+                        }
+                        // 删除后刷新任务
+                        querySaveTaskClick()
+                        data = data.data
+                        $.showAlertBox("成功", data)
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+            }, "确定删除")
+        }
+        function addSaveTaskList(data) {
+            var chooseAllText = `
+                <div class="top-pad-1">
+                    <a class="list-group-item list-group-item-action">
+                        <div class="input-group input-group-lg">
+                            <input type='checkbox' style='transform: scale(1.2)' class='pointer' id='saveTaskBoxListChooseAll' onclick='saveTaskBoxListChooseAllClick()'>
+                            <label class="pointer" for="saveTaskBoxListChooseAll">&nbsp;&nbsp;全选</label>
+                        </div>
+                    </a>
+                </div>
+            `
+            $("#saveTaskBoxList").append($(chooseAllText))
+            for (var i = 0, length = data.length; i < length; i++) {
+                var item = data[i]
+                var textTemplate = "<div style='display: inline-block; vertical-align: middle; line-height: 34px;'>" +
+                    "<input type='checkbox' style='transform: scale(1.2)' class='pointer saveTaskSignleChooseCheckbox'>&nbsp;&nbsp;" +
+                    "保存任务id：{saveTaskId}&nbsp;&nbsp;任务名称：{saveTaskTag}&nbsp;&nbsp;" +
+                    "地址：{targetAddress}&nbsp;&nbsp;端口：{targetPort}&nbsp;&nbsp;线程数量：{threadNum}&nbsp;&nbsp;保存时间：{saveTime}" +
+                    "<input type='hidden' value='{saveTaskId2}'/> " +
+                    "</div>"
+                item.saveTaskId2 = item.saveTaskId
+                var textResult = textTemplate.format(item)
+                var node = `
+                            <div class="top-pad-1">
+                                <a href="#" class="list-group-item list-group-item-action list-group-item-info" style="display: flex; justify-content: space-between;">
+                                    ` + textResult + `
+                                    <button class="btn btn-default" onclick="loadSaveTaskClick('` + item.saveTaskId + `')">载入任务</button>
+                                </a>
+                            </div>
+                        `
+                $("#saveTaskBoxList").append($(node))
+            }
+            var tailBtnNode  = `
+                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right; background-color: #FF4848;"
+                    onclick="deleteSaveTaskClick()">删除</button>
+                <button class="btn btn-default btn-lg" style="margin: 10px 10px 10px 10px; float:right;" onclick="closeSaveTaskBoxList()">返回</button>
+            `
+            $("#saveTaskBoxList").append($(tailBtnNode))
+        }
+        function closeSaveTaskBoxList() {
+            $.maskRemove()
+            $("#saveTaskBoxList").hide()
+        }
+        function querySaveTaskClick() {
+            $.loadingStart()
+            $.ajax({
+                url: "/GetSaveTaskDesc",
+                type: "POST",
+                data: {},
+                success: function(data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        return
+                    }
+                    $("#saveTaskBoxList").html("")
+
+                    data = data.data
+                    addSaveTaskList(data)
+
+                    $("#saveTaskBoxList").show()
+                    $.maskShow($("#createStressTool"), 10, function () {
+                        closeSaveTaskBoxList()
+                    })
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
+        }
+
+        function loadSaveTask(data) {
+            $("#targetAddress").val(data.targetAddress)
+            $("#targetPort").val(data.targetPort)
+            $("#timeout").val(data.timeout)
+            $("#threadNum").val(data.threadNum)
+
+            if (data.hasResponse) {
+                $("#hasResponseRadio1").attr("checked", "checked");
+                $("#hasResponseRadio2").removeAttr("checked");
+            } else {
+                $("#hasResponseRadio2").attr("checked", "checked");
+                $("#hasResponseRadio1").removeAttr("checked");
+            }
+            setResponseDetailHidden(!data.hasResponse)
+            $("#readTimeout").val(data.readTimeout)
+            $("#expectedBytes").val(data.expectedBytes)
+
+            if (data.isRepeat) {
+                $("#isRepeatSendRadio1").attr("checked","checked");
+                $("#isRepeatSendRadio2").removeAttr("checked");
+            } else {
+                $("#isRepeatSendRadio2").attr("checked","checked");
+                $("#isRepeatSendRadio1").removeAttr("checked");
+            }
+            setRepeatSendDetailHidden(!data.isRepeat)
+            $("#repeatTime").val(data.repeatTime)
+            $("#intervalTime").val(data.intervalTime)
+
+            $("#input-data-parent").html("")
+            for (var i = 0, length = data.dataMapArr.length; i < length; i++) {
+                var item = data.dataMapArr[i]
+                $("#input-data-parent").append($(getInputDataElement()))
+                var node = $(".input-data-top")[i] // 获取到刚才新增的最后一个节点
+
+                var type = $(node).children(".input-data-type")[0]
+                var inputLength = $(node).find(".input-data-length")[0]
+                var inputData = $(node).find(".input-data-data")[0]
+                var isBigEnd = $(node).find(".input-data-num-end")[0]
+
+                switch(item.type) {
+                    case "0":
+                        inputDataIntChose(type)
+                        break;
+                    case "1":
+                        inputDataFloatChose(type)
+                        break;
+                    case "2":
+                        inputDataStringChose(type)
+                        break;
+                    default:
+                        $.showAlertBox("错误", "未知数据类型", true);
+                        return
+                }
+                inputLength.value = item.length
+                inputData.value = item.data
+                $(isBigEnd).prop("checked", item.isBigEnd)
+                inputDataNumEndClick(type)
+            }
+        }
+        function loadSaveTaskClick(saveTaskId) {
+            $.loadingStart()
+            $.ajax({
+                url: "/GetSaveTaskDetail",
+                type: "POST",
+                data: JSON.stringify({
+                    "saveTaskId": saveTaskId
+                }),
+                success: function(data) {
+                    $.loadingEnd()
+                    if ($.checkResultErr(data)) {
+                        return
+                    }
+                    $.maskRemove()
+                    $("#saveTaskBoxList").hide()
+
+                    data = data.data.taskData
+                    loadSaveTask(data)
+                },
+                error: function (err) {
+                    $.loadingEnd()
+                    $.showRequestErr(err)
+                }
+            })
         }
 
         // createTaskFlag: true 为创建任务，false 为存储任务
