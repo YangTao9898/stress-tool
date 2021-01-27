@@ -1,0 +1,55 @@
+{{ define "tcpReturnTest" }}
+    <div id="tcpReturnTest">
+        <div style="display: inline-block; max-width: 40%">
+            <div class="input-group input-group-lg top-pad-1" >
+                <span class="input-group-addon">测试机器IP或域名<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="targetAddressErr">error</span>
+                <input type="text" class="form-control" id="retTargetAddress" aria-describedby="sizing-addon1">
+            </div>
+        </div>
+        <div class="left-margin-1" style="display: inline-block; max-width: 20%">
+            <div class="input-group input-group-lg top-pad-1">
+                <span class="input-group-addon" >测试机器端口<span class="must-fill">*</span></span>
+                <span class="input-group-addon error hidden" id="targetPortErr">error</span>
+                <input type="text" class="form-control" id="retTargetPort" aria-describedby="sizing-addon1">
+            </div>
+        </div>
+        <div>
+            <div class="input-group input-group-lg top-pad-1">
+                <div class="input-group input-group-lg" style="display: inline-block;">
+                    <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">连接</button>
+                </div>
+                <div class="input-group input-group-lg left-margin-1" style="display: inline-block;">
+                    <button class="btn btn-default btn-lg" style="background-color: #FF4848;" onclick="">断开连接</button>
+                </div>
+                <div class="input-group input-group-lg left-margin-1" style="display: inline-block;">
+                    <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">刷新获取返回</button>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="input-group input-group-lg top-pad-1" style="display: inline-block;">
+                <div class="input-group input-group-lg" style="display: inline-block;">
+                    <button class="btn btn-default btn-lg" style="background-color: #B2FCA7;" onclick="">请求数据队列</button>
+                </div>
+                <span class="btn btn-default btn-lg" style="font-weight: bold; font-size: 38px; padding: 0; margin: 0; border: 0px;">|</span>
+            </div>
+            <div class="input-group input-group-lg" style="display: inline-block;">
+                <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">添加队列</button>
+            </div>
+        </div>
+        <!-- 请求数据相关参数 -->
+        <div class="input-group input-group-lg top-pad-1">
+            <span class="input-group-addon">请求数据格式<span class="must-fill">*</span></span>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="">添加数据</button>
+        </div>
+        <span id="ret-input-data-parent">
+        </span>
+        <div class="input-group input-group-lg top-pad-1">
+            <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">发送当前队列数据</button>
+        </div>
+    </div>
+    <script>
+
+    </script>
+{{ end }}

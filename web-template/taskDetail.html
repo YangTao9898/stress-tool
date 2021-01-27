@@ -161,8 +161,9 @@
                             <td width="5%">类型</td>
                             <td width="5%">长度</td>
                             <td>数据</td>
+                            <td width="5%">大端</td>
                             <td style="color: #5bc0de" id="dataRadixTd">
-                                <span onclick="dataRadixSwitchBtnClick()" class="pointer" id="dataRadixSwitchBtn">8进制数据(点击切换)</span>&nbsp;&nbsp;
+                                <span onclick="dataRadixSwitchBtnClick()" class="pointer" id="dataRadixSwitchBtn">byte数据(点击切换)</span>&nbsp;&nbsp;
                                 <span onclick="showDataRadixBtnClick()" class="pointer" id="showDataRadixBtn">关闭进制显示</span>
                             </td>
                         </tr>
@@ -184,23 +185,23 @@
             $("#taskDetailParent").hide()
         }
 
-        var isNumberRadixOctonary = true // true 为默认八进制
+        var isNumberByteData = true // true 为默认byte数组数据 false 为二进制数据
         var isShowNumberRadixData = false // true 为显示进制数据
         function dataRadixReset() {
-            isNumberRadixOctonary = false
+            isNumberByteData = false
             isShowNumberRadixData = false
             setDataRadixSwitch()
             setShowDataRadix()
         }
 
         function setDataRadixSwitch() {
-            if (isNumberRadixOctonary) { // 切换为8进制
-                $("#dataRadixSwitchBtn").text("8进制数据(点击切换)")
-                $(".detailDataMapOctonary").show()
+            if (isNumberByteData) { // 切换为8进制
+                $("#dataRadixSwitchBtn").text("byte数据(点击切换)")
+                $(".detailDataMapByteData").show()
                 $(".detailDataMapBinary").hide()
             } else { // 切换为2进制
                 $("#dataRadixSwitchBtn").text("2进制数据(点击切换)")
-                $(".detailDataMapOctonary").hide()
+                $(".detailDataMapByteData").hide()
                 $(".detailDataMapBinary").show()
             }
         }
@@ -213,13 +214,13 @@
             } else { // 关闭进制显示
                 $("#showDataRadixBtn").text("打开进制显示")
                 $("#dataRadixSwitchBtn").hide()
-                $(".detailDataMapOctonary").hide()
+                $(".detailDataMapByteData").hide()
                 $(".detailDataMapBinary").hide()
             }
         }
 
         function dataRadixSwitchBtnClick() {
-            isNumberRadixOctonary = !isNumberRadixOctonary
+            isNumberByteData = !isNumberByteData
             setDataRadixSwitch()
         }
 
@@ -286,6 +287,7 @@
                     for (var i = 0, length = sendData.length; i < length; i++) {
                         var o = sendData[i]
                         var t = ""
+                        var isBigEnd = o.isBigEnd ? "是" : "否"
                         switch (o.type) {
                             case "0":
                                 t = "int"
@@ -295,6 +297,7 @@
                                 break
                             case "2":
                                 t = "string"
+                                isBigEnd = "-"
                                 break
                         }
                         var byteArr = "["
@@ -311,7 +314,8 @@
                                 <td>' + t + '</td>\
                                 <td>' + o.length + '</td>\
                                 <td>' + o.data + '</td>\
-                                <td class="detailDataMapOctonary">' + byteArr + '</td>\
+                                <td>' + isBigEnd + '</td>\
+                                <td class="detailDataMapByteData">' + byteArr + '</td>\
                                 <td class="detailDataMapBinary" style="display: none; word-wrap: break-word; word-break: break-all;">' + o.binaryData + '</td>\
                             </tr>\
                         '

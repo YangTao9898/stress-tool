@@ -9,6 +9,7 @@
             <script src="/web-template/lib/jquery.min.js"></script>
             <script src="/web-template/lib/bootstrap.min.js"></script>
             <script src="/web-template/js/globalDefine.js"></script>
+            <script src="/web-template/js/inputDataComponent.js"></script>
         </header>
         <body>
         <div style="margin: 20px">
@@ -16,11 +17,12 @@
                 <ul class="nav nav-tabs" >
                     <li role="presentation" id="createTaskBtn" class="active"><a href="#" onclick="showHidOther(1)">创建压测任务</a></li>
                     <li role="presentation" id="showTaskBtn"><a href="#" onclick="showHidOther(2)">查看压测任务</a></li>
-                    <li role="presentation"><a href="#">Messages</a></li>
+                    <li role="presentation" id="tcpReturnTestBtn"><a href="#" onclick="showHidOther(3)">TCP返回测试</a></li>
                 </ul>
             </div>
             <span id="createStressToolSpan">{{ template "createStressTool" . }}</span>
             <span id="taskDescSpan">{{ template "taskDesc" . }}</span>
+            <span id="tcpReturnTestSpan">{{ template "tcpReturnTest" . }}</span>
         </div>
         <div class="">
         </div>
@@ -28,8 +30,9 @@
         <script>
             const createStressTool = 1
             const taskDesc = 2
+            const tcpReturnTest = 3
             $(function () {
-                showHidOther(createStressTool)
+                showHidOther(tcpReturnTest)
             })
 
             var createStressToolSpanNode = $("#createStressToolSpan")
@@ -39,15 +42,27 @@
                     case createStressTool:
                         $("#createTaskBtn").addClass("active")
                         $("#showTaskBtn").removeClass("active")
+                        $("#tcpReturnTestBtn").removeClass("active")
                         $("#createStressToolSpan").show()
                         $("#taskDescSpan").hide()
+                        $("#tcpReturnTestSpan").hide()
                         break
                     case taskDesc:
                         $("#showTaskBtn").addClass("active")
                         $("#createTaskBtn").removeClass("active")
+                        $("#tcpReturnTestBtn").removeClass("active")
                         $("#createStressToolSpan").hide()
                         $("#taskDescSpan").show()
+                        $("#tcpReturnTestSpan").hide()
                         GetAllTaskDesc()
+                        break
+                    case tcpReturnTest:
+                        $("#showTaskBtn").removeClass("active")
+                        $("#createTaskBtn").removeClass("active")
+                        $("#tcpReturnTestBtn").addClass("active")
+                        $("#createStressToolSpan").hide()
+                        $("#taskDescSpan").hide()
+                        $("#tcpReturnTestSpan").show()
                         break
                 }
             }

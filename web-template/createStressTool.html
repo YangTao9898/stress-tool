@@ -96,7 +96,7 @@
         <!-- 请求数据相关参数 -->
         <div class="input-group input-group-lg top-pad-1">
             <span class="input-group-addon">请求数据格式<span class="must-fill">*</span></span>
-            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="addInputData()">添加数据</button>
+            <button type="button" class="btn btn-default btn-lg left-margin-1" onclick="$.InputDataComponent.addInputData('input-data-parent', 'create-stress-tool-')">添加数据</button>
         </div>
         <span id="input-data-parent">
         </span>
@@ -123,6 +123,8 @@
         </div>
     </div>
     <script>
+        const inputDataClassPrefix = "create-stress-tool-"
+
         // 默认选有
         $("#hasResponseRadio1").attr("checked", "checked");
         $("#hasResponseRadio2").removeAttr("checked");
@@ -146,67 +148,6 @@
             } else {
                 $("#repeat-send-detail").show(700)
             }
-        }
-
-        function getInputDataElement() {
-            var uniqueId = $.getUniqueId()
-            return `
-                <div class="input-data-top">
-                    <input type="hidden" class="input-data-type">
-                    <div style="display: inline-block; max-width: 30%">
-                        <div class="input-group input-group-lg top-pad-1">
-                            <!-- 类型按钮 -->
-                            <div class="btn-group" style="float: left;">
-                                <button type="button" class="btn btn-default dropdown-toggle btn-lg" data-toggle="dropdown"
-                                    aria-haspopup="true" aria-expanded="false"  style="width: 160px;">
-                                    <span class="dropdown-toggle-text">定义数据类型</span> <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a onclick="inputDataIntChose(this)">Int数据</a></li>
-                                    <li><a onclick="inputDataFloatChose(this)">Float数据</a></li>
-                                    <li><a onclick="inputDataStringChose(this)">字符串数据</a></li>
-                                    <li role="separator" class="divider"></li>
-                                    <li><a >取消</a></li>
-                                </ul>
-                            </div>
-                            <!-- 类型长度 -->
-                            <span class="input-group-addon left-margin-1" style="float:left; width: 150px">长度（byte）<span class="must-fill">*</span></span>
-                            <input type="text" class="form-control input-data-length" style="width: 150px; float: left" name="Data" aria-describedby="sizing-addon1">
-                        </div>
-                    </div>
-                    <div style="display: inline-block; max-width: 50%">
-                        <div class="input-group input-group-lg top-pad-1">
-                            <!-- 数据 -->
-                            <span class="input-group-addon left-margin-1">数据<span class="must-fill">*</span></span>
-                            <input type="text" class="form-control input-data-data" name="Data" aria-describedby="sizing-addon1">
-                        </div>
-                    </div>
-                    <!-- 大小端 -->
-                    <div style="display: inline-block;" class="left-margin-2 input-data-num-end-parent">
-                        <div class="input-group input-group-lg top-pad-1" style="height: 46px; font-size: 18px;">
-                            <input type="checkbox" class="pointer input-data-num-end" id="inputDataNumEnd` + uniqueId + `"
-                                onclick="inputDataNumEndClick(this)" checked>
-                            <label class="pointer input-data-num-end-label" style="margin-left: 5px; font-weight: normal;" for="inputDataNumEnd` + uniqueId + `">大端</label>
-                        </div>
-                    </div>
-                    <div style="display: inline-block; max-width: 10%" class="left-margin-2">
-                        <div class="input-group input-group-lg top-pad-1">
-                            <!-- 数据 -->
-                            <button style="display: inline-block;"
-                                class="btn btn-default btn-lg" onclick="deleteElement(this)">删除</button>
-                        </div>
-                    </div>
-                </div>`
-        }
-
-        function addInputData() {
-            var inputDataHTML = getInputDataElement()
-            //$("#input-data-parent").html($("#input-data-parent").html() + inputDataHTML)
-            $("#input-data-parent").append($(inputDataHTML))
-        }
-
-        function deleteElement(obj) {
-            $(obj.parentNode.parentNode.parentNode).remove()
         }
 
         function hidTestConnectedErr() {
@@ -251,90 +192,6 @@
                 error: function (err) {
                     $.loadingEnd()
                     $.showRequestErr(err)
-                }
-            })
-        }
-
-        function inputDataIntChose(obj) {
-            var p = $(obj).parents(".input-data-top")[0]
-            var inputLength = $(p).find(".input-data-length")[0]
-            $(inputLength).attr("placeholder", "只能为1,2,4,8")
-            $(inputLength).val("")
-            $(inputLength).removeAttr("disabled")
-            var inputType = $(p).children(".input-data-type")[0]
-            $(inputType).val("0")
-            $(p).find(".dropdown-toggle-text")[0].innerText = "Int数据"
-            // 大小端复选框
-            $(p).find(".input-data-num-end-parent").removeClass("hidden")
-
-            var inputData = $(p).find(".input-data-data")[0]
-            //$(inputData).unbind('input', computeBytes)
-            $(inputData).unbind('blur')
-        }
-
-        function inputDataFloatChose(obj) {
-            var p = $(obj).parents(".input-data-top")[0]
-            var inputLength = $(p).find(".input-data-length")[0]
-            $(inputLength).attr("placeholder", "只能为4,8")
-            $(inputLength).val("")
-            $(inputLength).removeAttr("disabled")
-            var inputType = $(p).children(".input-data-type")[0]
-            $(inputType).val("1")
-            $(p).find(".dropdown-toggle-text")[0].innerText = "Float数据"
-            // 大小端复选框
-            $(p).find(".input-data-num-end-parent").removeClass("hidden")
-
-            var inputData = $(p).find(".input-data-data")[0]
-            //$(inputData).unbind('input', computeBytes)
-            $(inputData).unbind('blur')
-        }
-
-        function inputDataNumEndClick(obj) {
-            var parent = $(obj).parent()
-            var checkbox = $(parent).find(".input-data-num-end")
-            $(parent).find(".input-data-num-end-label").text($(checkbox).is(":checked") ? "大端" : "小端")
-        }
-
-        /*function computeBytes(event) {
-            var objlength = event.data.inputLength
-            var objdata = event.data.inputData
-            var data = $(objdata).val()
-
-            for (var i = 0; i < data.length; i++) {
-                console.log(data.charCodeAt(i))
-            }
-            //console.log(atob(data))
-            $(objlength).val()
-        }*/
-        function inputDataStringChose(obj) {
-            var p = $(obj).parents(".input-data-top")[0]
-            var inputLength = $(p).find(".input-data-length")[0]
-            $(inputLength).attr("placeholder", "将会自动补充")
-            $(inputLength).val("")
-            $(inputLength).attr("disabled", "")
-            var inputType = $(p).children(".input-data-type")[0]
-            $(inputType).val("2")
-            $(p).find(".dropdown-toggle-text")[0].innerText = "字符串数据"
-            // 大小端复选框
-            $(p).find(".input-data-num-end-parent").addClass("hidden")
-
-            var inputData = $(p).find(".input-data-data")[0]
-            var lastValue = inputData.value
-            $(inputData).bind('blur', function () {
-                // input值未变时，不发送请求
-                if (lastValue != inputData.value || $(inputLength).val() == "") {
-                    lastValue = inputData.value
-                    $.ajax({
-                        url: "/GetStrBytes",
-                        type: "POST",
-                        data: inputData.value,
-                        success: function(data) {
-                            $(inputLength).val(data)
-                        },
-                        error: function (err) {
-                            $.showRequestErr(err)
-                        }
-                    })
                 }
             })
         }
@@ -426,8 +283,8 @@
                 var item = data[i]
                 var textTemplate = "<div style='display: inline-block; vertical-align: middle; line-height: 34px;'>" +
                     "<input type='checkbox' style='transform: scale(1.2)' class='pointer saveTaskSignleChooseCheckbox'>&nbsp;&nbsp;" +
-                    "保存任务id：{saveTaskId}&nbsp;&nbsp;任务名称：{saveTaskTag}&nbsp;&nbsp;" +
-                    "地址：{targetAddress}&nbsp;&nbsp;端口：{targetPort}&nbsp;&nbsp;线程数量：{threadNum}&nbsp;&nbsp;保存时间：{saveTime}" +
+                    "保存任务id:[{saveTaskId}]&nbsp;&nbsp;任务名称:[{saveTaskTag}]&nbsp;&nbsp;" +
+                    "地址:[{targetAddress}]&nbsp;&nbsp;端口:[{targetPort}]&nbsp;&nbsp;线程数量:[{threadNum}]&nbsp;&nbsp;保存时间:[{saveTime}]" +
                     "<input type='hidden' value='{saveTaskId2}'/> " +
                     "</div>"
                 item.saveTaskId2 = item.saveTaskId
@@ -467,6 +324,10 @@
                     $("#saveTaskBoxList").html("")
 
                     data = data.data
+                    if (data == null) {
+                        $.showAlertBox("提示", "没有查询到存储的任务")
+                        return
+                    }
                     addSaveTaskList(data)
 
                     $("#saveTaskBoxList").show()
@@ -509,26 +370,27 @@
             $("#repeatTime").val(data.repeatTime)
             $("#intervalTime").val(data.intervalTime)
 
+            var cPrefix = "." + inputDataClassPrefix
             $("#input-data-parent").html("")
             for (var i = 0, length = data.dataMapArr.length; i < length; i++) {
                 var item = data.dataMapArr[i]
-                $("#input-data-parent").append($(getInputDataElement()))
-                var node = $(".input-data-top")[i] // 获取到刚才新增的最后一个节点
+                $("#input-data-parent").append($(getInputDataElement(inputDataClassPrefix)))
+                var node = $(cPrefix + "input-data-top")[i] // 获取到刚才新增的最后一个节点
 
-                var type = $(node).children(".input-data-type")[0]
-                var inputLength = $(node).find(".input-data-length")[0]
-                var inputData = $(node).find(".input-data-data")[0]
-                var isBigEnd = $(node).find(".input-data-num-end")[0]
+                var type = $(node).children(cPrefix + "input-data-type")[0]
+                var inputLength = $(node).find(cPrefix + "input-data-length")[0]
+                var inputData = $(node).find(cPrefix + "input-data-data")[0]
+                var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0]
 
                 switch(item.type) {
                     case "0":
-                        inputDataIntChose(type)
+                        $.InputDataComponent.inputDataIntChose(type, inputDataClassPrefix)
                         break;
                     case "1":
-                        inputDataFloatChose(type)
+                        $.InputDataComponent.inputDataFloatChose(type, inputDataClassPrefix)
                         break;
                     case "2":
-                        inputDataStringChose(type)
+                        $.InputDataComponent.inputDataStringChose(type, inputDataClassPrefix)
                         break;
                     default:
                         $.showAlertBox("错误", "未知数据类型", true);
@@ -537,7 +399,7 @@
                 inputLength.value = item.length
                 inputData.value = item.data
                 $(isBigEnd).prop("checked", item.isBigEnd)
-                inputDataNumEndClick(type)
+                $.InputDataComponent.inputDataNumEndClick(type, inputDataClassPrefix)
             }
         }
         function loadSaveTaskClick(saveTaskId) {
@@ -568,6 +430,7 @@
 
         // createTaskFlag: true 为创建任务，false 为存储任务
         function createTaskOrSave(createTaskFlag) {
+            var cPrefix = "." + inputDataClassPrefix
             clearAllErr()
             // 读取数据
             var targetAddress = $("#targetAddress").val()
@@ -585,13 +448,13 @@
 
             var inputDataMap = []
             var inputDataParent = $("#input-data-parent")
-            var inputDataArr = $(inputDataParent).children(".input-data-top")
+            var inputDataArr = $(inputDataParent).children(cPrefix + "input-data-top")
             for (var i = 0; i < inputDataArr.length; i++) {
                 var node = inputDataArr[i]
-                var type = $(node).children(".input-data-type")[0].value
-                var inputLength = $(node).find(".input-data-length")[0].value
-                var inputData = $(node).find(".input-data-data")[0].value
-                var isBigEnd = $(node).find(".input-data-num-end")[0].checked
+                var type = $(node).children(cPrefix + "input-data-type")[0].value
+                var inputLength = $(node).find(cPrefix + "input-data-length")[0].value
+                var inputData = $(node).find(cPrefix + "input-data-data")[0].value
+                var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0].checked
                 var obj = {}
                 if (type == "") {
                     $.showAlertBox("请检查", "数据类型不能为空", true)

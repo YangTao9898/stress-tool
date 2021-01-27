@@ -1,5 +1,7 @@
 // taskDetail 导出专用变量
 var TaskDetal = {}
+// inputDataComponent 导出专用变量
+$.InputDataComponent = {}
 
 var alertBoxCallBackFunc = null
 $.alertBoxCallback = function () {

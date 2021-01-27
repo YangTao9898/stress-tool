@@ -129,7 +129,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, int8(dataInt))
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, int8(dataInt))
+					err = binary.Write(databytes, binary.LittleEndian, int8(dataInt))
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -143,7 +143,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, int16(dataInt))
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, int16(dataInt))
+					err = binary.Write(databytes, binary.LittleEndian, int16(dataInt))
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -157,7 +157,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, int32(dataInt))
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, int32(dataInt))
+					err = binary.Write(databytes, binary.LittleEndian, int32(dataInt))
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -171,7 +171,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, dataInt)
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, dataInt)
+					err = binary.Write(databytes, binary.LittleEndian, dataInt)
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -192,7 +192,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, float32(dataFloat))
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, float32(dataFloat))
+					err = binary.Write(databytes, binary.LittleEndian, float32(dataFloat))
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -206,7 +206,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				if isBigEnd {
 					err = binary.Write(databytes, binary.BigEndian, dataFloat)
 				} else {
-					err = binary.Write(databytes, binary.BigEndian, dataFloat)
+					err = binary.Write(databytes, binary.LittleEndian, dataFloat)
 				}
 				if err != nil {
 					log.Error(err.Error())
@@ -440,6 +440,7 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 			dataMapArr[index].BinaryData = util.BytesToBinaryString(dataBytes)
 			dataMapArr[index].ByteData = util.BytesToByteString(dataBytes)
 			dataMapArr[index].Data, err = byteToDataString(dataBytes, dataType, length, data.IsBigEnd[index])
+			dataMapArr[index].IsBigEnd = data.IsBigEnd[index]
 			if err != nil {
 				return res, util.WrapError("TaskDealDataToGetTaskDetailResponse parse data err:", err)
 			}
