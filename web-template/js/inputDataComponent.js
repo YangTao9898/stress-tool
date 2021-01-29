@@ -7,6 +7,7 @@ $.InputDataComponent.inputDataIntChose = inputDataIntChose
 $.InputDataComponent.inputDataFloatChose = inputDataFloatChose
 $.InputDataComponent.inputDataStringChose = inputDataStringChose
 $.InputDataComponent.inputDataNumEndClick = inputDataNumEndClick
+$.InputDataComponent.getInputData = getInputData
 
 
 
@@ -162,4 +163,44 @@ function inputDataNumEndClick(obj, classPrefix) {
     var parent = $(obj).parent()
     var checkbox = $(parent).find(cprefix + "input-data-num-end")
     $(parent).find(cprefix + "input-data-num-end-label").text($(checkbox).is(":checked") ? "大端" : "小端")
+}
+
+/**
+ * 返回输入的数据
+ * @param inputDataParentId 父节点id
+ * @param classPrefix class 名称前缀
+ * @returns {[]}
+ */
+function getInputData(inputDataParentId, classPrefix) {
+    var cPrefix = "." + classPrefix
+    var inputDataMap = []
+    var inputDataParent = $("#" + inputDataParentId)
+    var inputDataArr = $(inputDataParent).children(cPrefix + "input-data-top")
+    for (var i = 0; i < inputDataArr.length; i++) {
+        var node = inputDataArr[i]
+        var type = $(node).children(cPrefix + "input-data-type")[0].value
+        var inputLength = $(node).find(cPrefix + "input-data-length")[0].value
+        var inputData = $(node).find(cPrefix + "input-data-data")[0].value
+        var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0].checked
+        var obj = {}
+        if (type == "") {
+            $.showAlertBox("请检查", "数据类型不能为空", true)
+            return
+        }
+        if (inputLength == "" && type != "2") {
+            $.showAlertBox("请检查", "数据长度不能为空", true)
+            return
+        }
+        if (inputData == "") {
+            $.showAlertBox("请检查", "数据不能为空", true)
+            return
+        }
+
+        obj.type = type
+        obj.length = inputLength
+        obj.data = inputData
+        obj.isBigEnd = isBigEnd
+        inputDataMap.push(obj)
+    }
+    return inputDataMap
 }

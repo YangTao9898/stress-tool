@@ -8,7 +8,7 @@
                 <input type="text" class="form-control" id="targetAddress" aria-describedby="sizing-addon1">
             </div>
         </div>
-        <div class="left-margin-1" style="display: inline-block; max-width: 20%">
+        <div class="left-margin-1" style="display: inline-block; max-width: 30%">
             <div class="input-group input-group-lg top-pad-1">
                 <span class="input-group-addon" >测试机器端口<span class="must-fill">*</span></span>
                 <span class="input-group-addon error hidden" id="targetPortErr">error</span>
@@ -430,7 +430,6 @@
 
         // createTaskFlag: true 为创建任务，false 为存储任务
         function createTaskOrSave(createTaskFlag) {
-            var cPrefix = "." + inputDataClassPrefix
             clearAllErr()
             // 读取数据
             var targetAddress = $("#targetAddress").val()
@@ -446,35 +445,7 @@
             var repeatTime = $("#repeatTime").val()
             var intervalTime = $("#intervalTime").val()
 
-            var inputDataMap = []
-            var inputDataParent = $("#input-data-parent")
-            var inputDataArr = $(inputDataParent).children(cPrefix + "input-data-top")
-            for (var i = 0; i < inputDataArr.length; i++) {
-                var node = inputDataArr[i]
-                var type = $(node).children(cPrefix + "input-data-type")[0].value
-                var inputLength = $(node).find(cPrefix + "input-data-length")[0].value
-                var inputData = $(node).find(cPrefix + "input-data-data")[0].value
-                var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0].checked
-                var obj = {}
-                if (type == "") {
-                    $.showAlertBox("请检查", "数据类型不能为空", true)
-                    return
-                }
-                if (inputLength == "" && type != "2") {
-                    $.showAlertBox("请检查", "数据长度不能为空", true)
-                    return
-                }
-                if (inputData == "") {
-                    $.showAlertBox("请检查", "数据不能为空", true)
-                    return
-                }
-
-                obj.type = type
-                obj.length = inputLength
-                obj.data = inputData
-                obj.isBigEnd = isBigEnd
-                inputDataMap.push(obj)
-            }
+            var inputDataMap = $.InputDataComponent.getInputData("input-data-parent", inputDataClassPrefix)
 
             var sendData = {
                 "targetAddress": targetAddress,

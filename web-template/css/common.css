@@ -1,7 +1,9 @@
 /* 全局样式 */
 .top-pad-1 { padding-top: 10px }
+.top-pad-2 { padding-top: 20px }
 .right-pad-1 { padding-right: 10px }
 .left-pad-1 { padding-right: 10px }
+.top-margin-1 { margin-top: 10px }
 .left-margin-1 { margin-left: 10px }
 .left-margin-2 { margin-left: 20px }
 .right-margin-1 { margin-right: 10px }
@@ -11,6 +13,7 @@
 .heigh-full { height: 100% }
 .middle { float: none; display: inline-block; vertical-align: middle; }
 .pointer { cursor: pointer; }
+.drag-move { opacity: 0.6; z-index: 20; }
 
 .loader-05 {
     display: inline-block;
