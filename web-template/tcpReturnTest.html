@@ -196,9 +196,13 @@
                     var thisLineMaxIndex = perLineItemsNum - 1
                     var lastLineVerticalIndex = Math.floor((length - 1) / perLineItemsNum)
                     if (afterMoveVerticalIndex == lastLineVerticalIndex) {
-                        thisLineMaxIndex = lastLineVerticalIndex
+                        //console.log("lastLineVerticalIndex:", lastLineVerticalIndex)
+                        // 最后一个元素的数量
+                        var lastItems = Math.floor((length - 1) % perLineItemsNum)
+                        thisLineMaxIndex = lastItems
                     }
                     if (afterMoveHorizontalIndex > thisLineMaxIndex) { // 超过最大元素
+                        //console.log("thisLineMaxIndex:", thisLineMaxIndex)
                         afterMoveHorizontalIndex = thisLineMaxIndex
                     }
                 } else {
