@@ -1,4 +1,4 @@
-package model
+package convert
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	go_logger "github.com/phachon/go-logger"
 	"strconv"
 	"stress-tool/comon/util"
+	"stress-tool/model"
 )
 
 var log *go_logger.Logger
@@ -20,7 +21,7 @@ func init() {
  * CreateTaskData 返回值
  * resCode string 错误码，为空则没错误
  */
-func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode string) {
+func CheckToCreateTaskData(req model.CreateTaskRequest) (res model.CreateTaskData, resCode string) {
 	if req.TargetAddress == "" {
 		resCode += "1001,"
 	}
@@ -118,7 +119,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 		dataTypeMap[index] = m
 		num = end + 1
 		switch tn {
-		case NUMBER:
+		case model.NUMBER:
 			switch length {
 			case 1:
 				dataInt, err := strconv.ParseInt(data, 10, 8)
@@ -181,7 +182,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 				return
 			}
 
-		case FLOAT:
+		case model.FLOAT:
 			switch length {
 			case 4:
 				dataFloat, err := strconv.ParseFloat(data, 32)
@@ -214,7 +215,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 			default:
 				resCode += "1060"
 			}
-		case STRING:
+		case model.STRING:
 			length = len(data)
 			bytes := []byte(data)
 			_, err := databytes.Write(bytes)
@@ -227,7 +228,7 @@ func CheckToCreateTaskData(req CreateTaskRequest) (res CreateTaskData, resCode s
 		}
 	}
 
-	res = CreateTaskData{
+	res = model.CreateTaskData{
 		TargetAddress: req.TargetAddress,
 		TargetPort:    req.TargetPort,
 		Timeout:       timeout,
@@ -250,7 +251,7 @@ func byteToDataString(bs []byte, t int, length int, isBigEnd bool) (string, erro
 	buf := bytes.NewBuffer(bs)
 	var resStr string
 	switch t {
-	case NUMBER:
+	case model.NUMBER:
 		var err error
 		if isBigEnd {
 			switch length {
@@ -299,7 +300,7 @@ func byteToDataString(bs []byte, t int, length int, isBigEnd bool) (string, erro
 			return "", err
 		}
 		return resStr, err
-	case FLOAT:
+	case model.FLOAT:
 		var err error
 		if isBigEnd {
 			switch length {
@@ -332,15 +333,15 @@ func byteToDataString(bs []byte, t int, length int, isBigEnd bool) (string, erro
 			return "", err
 		}
 		return resStr, err
-	case STRING:
+	case model.STRING:
 		return string(bs), nil
 	default:
 		return "", util.NewErrorf("not support data type[%d]", t)
 	}
 }
 
-func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailResponse, error) {
-	var res GetTaskDetailResponse
+func TaskDealDataToGetTaskDetailResponse(data model.TaskDealData) (model.GetTaskDetailResponse, error) {
+	var res model.GetTaskDetailResponse
 	readTimeout := "-"
 	expectedBytes := "-"
 	if data.HasResponse {
@@ -361,13 +362,13 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 
 	state := ""
 	switch data.State {
-	case NOT_START:
+	case model.NOT_START:
 		state = "未执行"
-	case READY:
+	case model.READY:
 		state = "等待执行"
-	case RUNNING:
+	case model.RUNNING:
 		state = "正在执行"
-	case FINISH:
+	case model.FINISH:
 		state = "执行完毕"
 	default:
 		state = "未知状态"
@@ -394,9 +395,9 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 	recvBytes := "-"
 	totalCostTime := "-"
 	totalRealCostTime := "-"
-	if data.State == RUNNING {
+	if data.State == model.RUNNING {
 		startTime = data.StartTime
-	} else if data.State == FINISH {
+	} else if data.State == model.FINISH {
 		startTime = data.StartTime
 		endTime = data.EndTime
 		totalRequestCount = strconv.Itoa(data.TotalRequestCount)
@@ -422,10 +423,10 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 		threadCostMinTIme = strconv.FormatInt(data.ThreadCostMinTime, 10) + " ms"
 	}
 
-	dataMapArr := make([]GetTaskDetailDataMap, len(data.DataTypeMap))
+	dataMapArr := make([]model.GetTaskDetailDataMap, len(data.DataTypeMap))
 	for index, obj := range data.DataTypeMap {
 		for k, dataType := range obj { // 仅一次
-			n1, n2, err := CreateTaskDataKeySplite(k)
+			n1, n2, err := model.CreateTaskDataKeySplite(k)
 			if err != nil {
 				errMsg := fmt.Sprintf("%s occur error: %s", "TaskDealDataToGetTaskDetailResponse", err.Error())
 				return res, errors.New(errMsg)
@@ -451,7 +452,7 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 	if data.Timeout > 0 {
 		timeout = strconv.Itoa(data.Timeout) + " ms"
 	}
-	res = GetTaskDetailResponse{
+	res = model.GetTaskDetailResponse{
 		TargetAddress:          data.TargetAddress,
 		TargetPort:             data.TargetPort,
 		Timeout:                timeout,
@@ -491,10 +492,10 @@ func TaskDealDataToGetTaskDetailResponse(data TaskDealData) (GetTaskDetailRespon
 	return res, nil
 }
 
-func ToDescFromSaveTcpTaskFileItem(item []*SaveTcpTaskFileItem) []SaveTcpTaskFileDesc {
-	var resArr []SaveTcpTaskFileDesc
+func ToDescFromSaveTcpTaskFileItem(item []*model.SaveTcpTaskFileItem) []model.SaveTcpTaskFileDesc {
+	var resArr []model.SaveTcpTaskFileDesc
 	for i := len(item) - 1; i >= 0; i-- {
-		var desc SaveTcpTaskFileDesc
+		var desc model.SaveTcpTaskFileDesc
 		desc.SaveTaskId = (*item[i]).SaveTaskId
 		desc.SaveTaskTag = (*item[i]).TaskData.SaveTaskTag
 		desc.SaveTime = (*item[i]).SaveTime

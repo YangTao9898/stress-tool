@@ -148,3 +148,14 @@ func TestBytesToBinaryString(t *testing.T) {
 		}
 	}
 }
+
+func TestGetUniqueString(t *testing.T) {
+	for i := 0; i < 30; i++ {
+		s, err := GetUniqueString("test-")
+		if err != nil {
+			t.Errorf("err:[%+v], result:[%s]", err, s)
+		} else {
+			t.Log(s)
+		}
+	}
+}

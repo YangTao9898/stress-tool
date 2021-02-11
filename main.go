@@ -14,11 +14,11 @@ const errMsgKey = "A mistake seems to have happened, cause"
 var log *go_logger.Logger
 
 // 加载包中的方法
-var loadHttpHandleMethodMap map[string]func([]byte) interface{}
+var loadHttpHandleMethodMap map[string]func([]byte, *gin.Context) interface{}
 
 func init() {
 	log = util.GetLogger()
-	loadHttpHandleMethodMap = make(map[string]func([]byte) interface{}, 10)
+	loadHttpHandleMethodMap = make(map[string]func([]byte, *gin.Context) interface{}, 10)
 	// 注册 Controller 中的方法
 	util.MapMerge(loadHttpHandleMethodMap, controller.TcpControllerMethodHandleMap)
 }
@@ -37,7 +37,7 @@ func loadHttpInterface(router *gin.Engine) {
 				})
 			}
 			// 执行 handle 方法
-			response := v(body)
+			response := v(body, c)
 			c.JSON(http.StatusOK, response)
 			log.Debugf("path:[%s]\nrequest param:[%s]\nresponse:[%+v]", methodName, string(body), response)
 		})
@@ -50,6 +50,9 @@ func main() {
 	router.StaticFS("/web-template/lib/", http.Dir("web-template/lib/"))
 	router.StaticFS("/web-template/css/", http.Dir("web-template/css/"))
 	router.StaticFS("/web-template/js/", http.Dir("web-template/js/"))
+
+	// 初始化 session
+	util.InitSession(router)
 
 	// 界面
 	router.LoadHTMLGlob("web-template/*.html")

@@ -2,8 +2,11 @@ package util
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"strconv"
+	"time"
 	"unicode"
 )
 
@@ -89,4 +92,12 @@ func BytesToByteString(bs []byte) []string {
 		byteArr = append(byteArr, fmt.Sprintf("%d", v))
 	}
 	return byteArr
+}
+
+// 生成 前缀 + 毫秒级时间戳 + 10位随机数 随机字符串
+const forUniqueNum = 10000000000
+
+func GetUniqueString(prefix string) (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(forUniqueNum))
+	return fmt.Sprintf("%s%s-%010d", prefix, GetDateToStrWithMillisecond(time.Now()), n), err
 }

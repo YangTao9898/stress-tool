@@ -3,22 +3,27 @@ package controller
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	go_logger "github.com/phachon/go-logger"
+	"net"
 	"os"
 	"stress-tool/comon/util"
 	"stress-tool/model"
+	"stress-tool/src/convert"
 	"stress-tool/src/tcp"
 	"sync"
 	"time"
 )
 
 // 向外导出的方法变量字典
-var TcpControllerMethodHandleMap map[string]func([]byte) interface{}
+var TcpControllerMethodHandleMap map[string]func([]byte, *gin.Context) interface{}
 var log *go_logger.Logger
 var tcpTaskFileLock sync.Mutex
 var tcpTaskFileMap map[string]*model.SaveTcpTaskFileItem
 var tcpTaskFileArr []*model.SaveTcpTaskFileItem
+
+var tcpTestReturnConnMap map[string]model.TcpReturnTestConnStruct
 
 const (
 	tcpTaskFilePath    = "./web-template/save/tcpTask.txt"
@@ -28,7 +33,8 @@ const (
 func init() {
 	log = util.GetLogger()
 	// 容量会自增长
-	TcpControllerMethodHandleMap = make(map[string]func([]byte) interface{}, 0)
+	TcpControllerMethodHandleMap = make(map[string]func([]byte, *gin.Context) interface{}, 0)
+	tcpTestReturnConnMap = make(map[string]model.TcpReturnTestConnStruct, 4)
 	// 增加的方法要注册到 TcpControllerMethodHandleMap 列表中
 	TcpControllerMethodHandleMap["/TestConnectivity"] = TestConnectivity
 	TcpControllerMethodHandleMap["/CreateTask"] = CreateTask
@@ -40,6 +46,8 @@ func init() {
 	TcpControllerMethodHandleMap["/GetSaveTaskDesc"] = GetSaveTaskDesc
 	TcpControllerMethodHandleMap["/GetSaveTaskDetail"] = GetSaveTaskDetail
 	TcpControllerMethodHandleMap["/DeleteSaveTask"] = DeleteSaveTask
+	TcpControllerMethodHandleMap["/TcpTestReturnConnect"] = TcpTestReturnConnect
+	TcpControllerMethodHandleMap["/TcpTestReturnDisconnect"] = TcpTestReturnDisconnect
 }
 
 // 如未初始化相关变量则初始化
@@ -79,14 +87,14 @@ func initTcpTaskFile() error {
 	return nil
 }
 
-func TestConnectivity(request []byte) interface{} {
-	var req model.TestConnectivityRequest
+func TestConnectivity(request []byte, c *gin.Context) interface{} {
+	var req model.TcpConnRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
 		log.Error(err.Error())
 		return util.ResponseFailPack(err.Error())
 	}
-	m := tcp.TestConnectivityCheckParam(req)
+	m := tcp.TcpConnRequestCheckParam(req)
 	if m != "" {
 		return util.ResponsePack(m, "", nil)
 	}
@@ -104,14 +112,14 @@ func TestConnectivity(request []byte) interface{} {
 	})
 }
 
-func CreateTask(request []byte) interface{} {
+func CreateTask(request []byte, c *gin.Context) interface{} {
 	var req model.CreateTaskRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
 		log.Error(err.Error())
 		return util.ResponseFailPack(err.Error())
 	}
-	res, resCode := model.CheckToCreateTaskData(req)
+	res, resCode := convert.CheckToCreateTaskData(req)
 	if resCode != "" {
 		return util.ResponsePack(resCode, "", nil)
 	}
@@ -123,7 +131,7 @@ func CreateTask(request []byte) interface{} {
 	return util.ResponseSuccPack("创建任务成功")
 }
 
-func GetAllTaskDesc(request []byte) interface{} {
+func GetAllTaskDesc(request []byte, c *gin.Context) interface{} {
 	var req model.GetAllTaskDescRequest
 	req.State = -1 // 默认 -1
 	err := json.Unmarshal(request, &req)
@@ -135,7 +143,7 @@ func GetAllTaskDesc(request []byte) interface{} {
 	return util.ResponseSuccPack(allTaskDescript)
 }
 
-func GetTaskDetail(request []byte) interface{} {
+func GetTaskDetail(request []byte, c *gin.Context) interface{} {
 	var req model.TaskIdParamRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
@@ -147,18 +155,18 @@ func GetTaskDetail(request []byte) interface{} {
 	if taskDealData == nil {
 		return util.ResponseFailPack("该压测任务不存在")
 	}
-	response, err := model.TaskDealDataToGetTaskDetailResponse(*taskDealData)
+	response, err := convert.TaskDealDataToGetTaskDetailResponse(*taskDealData)
 	if err != nil {
 		return util.ResponseFailPack(err.Error())
 	}
 	return util.ResponseSuccPack(response)
 }
 
-func GetStrBytes(request []byte) interface{} {
+func GetStrBytes(request []byte, c *gin.Context) interface{} {
 	return len(request)
 }
 
-func StartTask(request []byte) interface{} {
+func StartTask(request []byte, c *gin.Context) interface{} {
 	var req model.TaskIdParamRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
@@ -173,7 +181,7 @@ func StartTask(request []byte) interface{} {
 	return util.ResponsePack(util.RESULT_OK, "任务开始执行...", nil)
 }
 
-func SaveTask(request []byte) interface{} {
+func SaveTask(request []byte, c *gin.Context) interface{} {
 	var req model.CreateTaskRequest
 	err := json.Unmarshal(request, &req)
 	if err != nil {
@@ -181,7 +189,7 @@ func SaveTask(request []byte) interface{} {
 		return util.ResponseFailPack(err.Error())
 	}
 	// 检查参数是否符合规范
-	_, resCode := model.CheckToCreateTaskData(req)
+	_, resCode := convert.CheckToCreateTaskData(req)
 	if resCode != "" {
 		return util.ResponsePack(resCode, "", nil)
 	}
@@ -219,7 +227,7 @@ func SaveTask(request []byte) interface{} {
 	return util.ResponseSuccPack("保存任务成功")
 }
 
-func GetSaveTaskDesc(request []byte) interface{} {
+func GetSaveTaskDesc(request []byte, c *gin.Context) interface{} {
 	tcpTaskFileLock.Lock()
 	defer tcpTaskFileLock.Unlock()
 	err := initTcpTaskFile()
@@ -227,11 +235,11 @@ func GetSaveTaskDesc(request []byte) interface{} {
 		log.Error(err.Error())
 		return util.ResponseSuccPack("获取保存的任务失败")
 	}
-	resArr := model.ToDescFromSaveTcpTaskFileItem(tcpTaskFileArr)
+	resArr := convert.ToDescFromSaveTcpTaskFileItem(tcpTaskFileArr)
 	return util.ResponseSuccPack(resArr)
 }
 
-func GetSaveTaskDetail(request []byte) interface{} {
+func GetSaveTaskDetail(request []byte, c *gin.Context) interface{} {
 	tcpTaskFileLock.Lock()
 	defer tcpTaskFileLock.Unlock()
 	err := initTcpTaskFile()
@@ -253,7 +261,7 @@ func GetSaveTaskDetail(request []byte) interface{} {
 	}
 }
 
-func DeleteSaveTask(request []byte) interface{} {
+func DeleteSaveTask(request []byte, c *gin.Context) interface{} {
 	var arr model.SaveTaskIdArrStruct
 	err := json.Unmarshal(request, &arr)
 	if err != nil {
@@ -321,4 +329,120 @@ func DeleteSaveTask(request []byte) interface{} {
 
 	succ = true
 	return util.ResponseSuccPack("删除保存任务成功")
+}
+
+const sessionName = "TCP_RETURN_TEST_TCP_CONN_SESSION"
+
+func TcpTestReturnConnect(request []byte, c *gin.Context) interface{} {
+	ret := model.TcpTestReturnConnectResponse{
+		Msg:    "",
+		Result: false,
+	}
+
+	var req model.TcpConnRequest
+	err := json.Unmarshal(request, &req)
+	if err != nil {
+		ret.Msg = "创建连接发生错误：" + err.Error()
+		log.Error(ret.Msg)
+		return util.ResponseSuccPack(ret)
+	}
+	m := tcp.TcpConnRequestCheckParam(req)
+	if m != "" {
+		return util.ResponsePack(m, "", nil)
+	}
+
+	// 查看连接是否存在
+	value := util.GetSession(c, sessionName)
+	var connStruct model.TcpReturnTestConnStruct
+	if value == nil {
+		connStruct = model.TcpReturnTestConnStruct{}
+	} else {
+		var ok bool
+		var uniqueKey string
+		uniqueKey, ok = value.(string)
+		if !ok {
+			ret.Msg = fmt.Sprintf("创建连接发生错误：value[%+v]类型转换异常", value)
+			log.Error(ret.Msg)
+			return util.ResponseSuccPack(ret)
+		}
+		connStruct, ok = tcpTestReturnConnMap[uniqueKey]
+		if !ok || !connStruct.IsConn { // 不存在或者未连接
+			goto END
+		}
+		ret.Msg = "连接已经存在"
+		ret.Result = true
+		return util.ResponseSuccPack(ret)
+	}
+
+END:
+	conn, err := tcp.TcpConn(req.TargetAddress, req.TargetPort)
+	if err != nil {
+		ret.Msg = "创建连接发生错误：" + err.Error()
+		log.Error(ret.Msg)
+		return util.ResponseSuccPack(ret)
+	}
+	connStruct.Conn = conn
+	connStruct.IsConn = true
+	uniqueKey, err := util.GetUniqueString("TcpTestReturnConnect-")
+	if err != nil {
+		ret.Msg = "创建连接发生错误：" + err.Error()
+		log.Error(ret.Msg)
+		return util.ResponseSuccPack(ret)
+	}
+	err = util.SetSession(c, sessionName, uniqueKey)
+	if err != nil {
+		ret.Msg = "创建连接发生错误：" + err.Error()
+		log.Error(ret.Msg)
+		return util.ResponseSuccPack(ret)
+	}
+	tcpTestReturnConnMap[uniqueKey] = connStruct
+	ret.Msg = "连接成功"
+	ret.Result = true
+	return util.ResponseSuccPack(ret)
+}
+
+func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
+	value := util.GetSession(c, sessionName)
+	if value == nil {
+		return util.ResponseFailPack("没有进行连接不能断开")
+	}
+
+	var errMsg string
+	uniqueKey, ok := value.(string)
+	if !ok {
+		errMsg = fmt.Sprintf("断开连接发生错误：value[%+v]类型转换异常", value)
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+
+	connStruct, ok := tcpTestReturnConnMap[uniqueKey]
+	if !ok {
+		errMsg = "断开连接发生错误：该连接不存在"
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+	if connStruct.Conn == nil {
+		errMsg = "断开连接发生错误：连接为空"
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+	conn, ok := connStruct.Conn.(net.Conn)
+	if !ok {
+		errMsg = "断开连接发生错误：类型转换错误"
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+	err := conn.Close()
+	if err != nil { // 该错误不影响断开连接
+		errMsg = "断开连接发生错误：" + err.Error()
+		log.Error(errMsg)
+	}
+	err = util.DeleteSession(c, sessionName)
+	if err != nil {
+		errMsg = fmt.Sprintf("断开连接发生错误：%s", err.Error())
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+
+	return util.ResponseSuccPack("断开连接成功")
 }

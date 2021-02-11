@@ -16,6 +16,14 @@
 .drag-move { opacity: 0.6; z-index: 20; }
 .type-area-active { background-color: #FFF2F0; }
 
+.down-arrow {
+    border-top: 10px solid #03F;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    width: 0;
+    height: 0;
+}
+
 .loader-05 {
     display: inline-block;
     width: 4em;

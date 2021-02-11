@@ -3,24 +3,26 @@
         <div style="display: inline-block; max-width: 40%">
             <div class="input-group input-group-lg top-pad-1" >
                 <span class="input-group-addon">测试机器IP或域名<span class="must-fill">*</span></span>
-                <span class="input-group-addon error hidden" id="targetAddressErr">error</span>
+                <span class="input-group-addon error hidden" id="retTargetAddressErr">error</span>
                 <input type="text" class="form-control" id="retTargetAddress" aria-describedby="sizing-addon1">
             </div>
         </div>
         <div class="left-margin-1" style="display: inline-block; max-width: 20%">
             <div class="input-group input-group-lg top-pad-1">
                 <span class="input-group-addon" >测试机器端口<span class="must-fill">*</span></span>
-                <span class="input-group-addon error hidden" id="targetPortErr">error</span>
+                <span class="input-group-addon error hidden" id="retTargetPortErr">error</span>
                 <input type="text" class="form-control" id="retTargetPort" aria-describedby="sizing-addon1">
             </div>
         </div>
         <div>
             <div class="input-group input-group-lg top-pad-1">
+                <div id="ret-conn-status-light" class="right-margin-1" style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: red;">
+                </div>
                 <div class="input-group input-group-lg" style="display: inline-block;">
-                    <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">连接</button>
+                    <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="TcpReturnTest.connBtnClick()">连接</button>
                 </div>
                 <div class="input-group input-group-lg left-margin-1" style="display: inline-block;">
-                    <button class="btn btn-default btn-lg" style="background-color: #FF4848;" onclick="">断开连接</button>
+                    <button class="btn btn-default btn-lg" style="background-color: #FF4848;" onclick="TcpReturnTest.disconnBtnClick()">断开连接</button>
                 </div>
                 <div class="input-group input-group-lg left-margin-1" style="display: inline-block;">
                     <button class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">刷新获取返回</button>
@@ -61,11 +63,23 @@
                         border-radius: 10px;">
                 <div style="height: 100%; padding-top: 20px; text-align: center;">拖拽到此处删除<br>(通过拖拽可以改变顺序)</div>
             </div>
+            <div class="input-group input-group-lg" style="display: inline-block;">
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.clearAllItems()">清除全部转换类型</button>
+            </div>
             <div>
                 <div id="ret-res-origin-data" class="top-margin-1" style="position: relative; min-height: 70px;
                         background-color: #d9edf7; border-radius: 10px;">
                 </div>
             </div>
+        </div>
+        <!-- 转化结果 -->
+        <div class="input-group input-group-lg top-pad-2">
+            <div class="down-arrow" style="display: inline-block;"></div>
+            <button class="btn btn-default btn-lg left-margin-2" onclick="TcpReturnTest">开始转换</button>
+        </div>
+        <div class="input-group input-group-lg top-pad-2">
+            <span class="input-group-addon" id="sizing-addon1">转化结果</span>
+            <textarea class="form-control" placeholder="" aria-describedby="sizing-addon1" style="height: 70px;"></textarea>
         </div>
     </div>
     <script>
@@ -308,6 +322,12 @@
                 nextLeft += perItemWitdh + transverseSeparationDistance
             }
 
+            ret.clearAllItems = function () {
+                $("#ret-res-origin-data").html("")
+                nextTop = startTransverseSeparationDistance
+                nextLeft = startLongitudinalSeparationDistance
+            }
+
             ret.relocateItems = function (items) {
                 nextTop = startTransverseSeparationDistance
                 nextLeft = startLongitudinalSeparationDistance
@@ -348,6 +368,78 @@
                     $("#ret-delete-type-area-div").removeClass("type-area-active")
                 }
             })
+
+            ret.hidConneErr = function () {
+                $("#retTargetAddressErr").addClass("hidden")
+                $("#retTargetPortErr").addClass("hidden")
+            }
+            ret.connBtnClick = function () {
+                ret.hidConneErr()
+                var data = {}
+                data.targetAddress = $("#retTargetAddress").val()
+                data.targetPort = $("#retTargetPort").val()
+                $.loadingStart()
+                $.ajax({
+                    url: "/TcpTestReturnConnect",
+                    type: "POST",
+                    data: JSON.stringify(data),
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            var strs = data.resultCode.split(",")
+                            for (var i = 0, len = strs.length; i < len; i++) {
+                                if (strs[i] == "1001") {
+                                    $("#retTargetAddressErr").text("不能为空")
+                                    $("#retTargetAddressErr").removeClass("hidden")
+                                }
+                                if (strs[i] == "1002") {
+                                    $("#retTargetPortErr").text("不能为空")
+                                    $("#retTargetPortErr").removeClass("hidden")
+                                }
+                            }
+                            return
+                        }
+                        data = data.data
+                        var result = data.result
+                        if (result) {
+                            $.showAlertBox("成功", data.msg)
+                            $("#ret-conn-status-light").css("background-color", "green")
+                        } else {
+                            $.showAlertBox("失败", data.msg, true)
+                        }
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+            }
+
+            ret.disconnBtnClick = function () {
+                $.loadingStart()
+                $.ajax({
+                    url: "/TcpTestReturnDisconnect",
+                    type: "POST",
+                    data: null,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            return
+                        }
+                        var msg = data.data
+                        $.showAlertBox("成功", msg)
+                        $("#ret-conn-status-light").css("background-color", "red")
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+            }
 
             return ret
         }()

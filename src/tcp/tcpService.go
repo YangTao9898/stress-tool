@@ -80,7 +80,7 @@ func GetTaskByTaskId(taskId string) *model.TaskDealData {
 	return taskMap[taskId]
 }
 
-func TestConnectivityCheckParam(req model.TestConnectivityRequest) string {
+func TcpConnRequestCheckParam(req model.TcpConnRequest) string {
 	resultCodes := ""
 	if req.TargetAddress == "" {
 		resultCodes += "1001,"
@@ -327,4 +327,8 @@ func StartTask(taskId string) error {
 		v.State = model.FINISH
 	}()
 	return nil
+}
+
+func TcpConn(address, port string) (net.Conn, error) {
+	return net.Dial("tcp", address+":"+port)
 }

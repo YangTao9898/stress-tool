@@ -1,6 +1,8 @@
 package model
 
-type TestConnectivityRequest struct {
+import "net"
+
+type TcpConnRequest struct {
 	TargetAddress string `json:"targetAddress"` // ip 或域名
 	TargetPort    string `json:"targetPort"`
 }
@@ -99,4 +101,14 @@ type SaveTaskIdStruct struct {
 
 type SaveTaskIdArrStruct struct {
 	SaveTaskIdArr []string `json:"saveTaskIdArr"`
+}
+
+type TcpReturnTestConnStruct struct {
+	Conn   net.Conn
+	IsConn bool
+}
+
+type TcpTestReturnConnectResponse struct {
+	Msg    string `json:"msg"`
+	Result bool   `json:"result"`
 }
