@@ -88,6 +88,7 @@
             const inputDataClassPrefix = "tcp-return-test-"
             const inputDataParentParentClassName = "ret-input-data-parent-parent"
             const retReqDataQueueBtnClassName = "ret-req-data-queue-btn"
+            const inputDataParentClass = "ret-inout-data-parent-class"
 
             var counter = 0
             ret.addInputDataQueue = function () {
@@ -103,10 +104,10 @@
                             <button type="button" class="btn btn-default btn-lg left-margin-1"
                                     onclick="TcpReturnTest.deleteReqDataQueue('` + inputDataParentParentId + `', '` + inputQueueId + `')">删除</button>
                         </div>
-                        <span id="` + inputDataParentId + `">
+                        <span id="` + inputDataParentId + `" class="` + inputDataParentClass + `">
                         </span>
                         <div class="input-group input-group-lg top-pad-1">
-                            <button type="button" class="btn btn-default btn-lg" style="background-color: #C6F089;" onclick="">发送当前队列数据</button>
+                            <button type="button" class="btn btn-default btn-lg ret-send-current-queue-data" style="background-color: #C6F089;">发送当前队列数据</button>
                         </div>
                     </div>
                 `
@@ -123,6 +124,18 @@
                 $("#ret-req-data-queue-parent").append($(queueBtnNode))
 
                 TcpReturnTest.switchReqDataQueue($("#" + inputQueueId).find("button"), inputDataParentParentId)
+                
+                // 给当前队列数据增加点击时间，之所以不在html嵌入onclick，是因为需要存储一些东西在外函数，用到闭包
+                // 新增的元素在最后一个
+                var nodeArr = $("." + inputDataParentParentClassName)
+                var addNode = nodeArr[nodeArr.length - 1]
+                var sendQueueDataBtn = $(addNode).find(".ret-send-current-queue-data")
+                var param = {}
+                param.node = sendQueueDataBtn
+                param.parentId = inputDataParentId
+                param.classPrefix = inputDataClassPrefix
+                param.lastdata = []
+                sendQueueDataBtn.bind("click", param, TcpReturnTest.saveRequestParam)
             }
 
             ret.switchReqDataQueue = function(self, id) {
@@ -440,6 +453,61 @@
                     }
                 })
             }
+
+            // 每当输出框变化时，保存该输出框所在的参数队列内容
+            ret.saveRequestParam = function (e) {
+                var param = e.data
+                var obj = param.node
+                var lastdata = param.lastdata
+                var parentId = param.parentId
+                var classPrefix = param.classPrefix
+                // 获得该对象的父亲节点
+                var thisP = $(obj).parents("." + inputDataParentParentClassName)[0]
+                // 获得所有节点的父对象数组
+                var pArr = $("." + inputDataParentParentClassName)
+                var length = pArr.length
+                for (var i = 0; i < length; i++) {
+                    if (thisP == pArr[i]) {
+                        break
+                    }
+                }
+                // 没在队列中找到传进来的元素
+                if (i >= length) {
+                    $.showAlertBox("错误", "在队列中未找到传进来的元素，请联系管理员", true)
+                    return
+                }
+                // 获得填写的数据
+                var inputDataRet = $.InputDataComponent.getInputData(parentId, classPrefix, true)
+                if (inputDataRet.hasErr) {
+                    return
+                }
+                var inputDataMap = inputDataRet.inputDataMap
+                console.log(param.lastdata)
+
+                function sendSyncAjax() {
+                    
+                }
+                
+                if (inputDataMap != null) {
+                    // 参数都正常，查看是否变化
+                    if (JSON.stringify(lastdata) == '[]') {
+                        console.log("第一次，保存到 session")
+                    } else {
+                        for (var i = 0, length = inputDataMap.length; i < length; i++) {
+                            console.log(inputDataMap, lastdata)
+                            if (inputDataMap[i].type != lastdata[i].type || inputDataMap[i].length != lastdata[i].length ||
+                                inputDataMap[i].data != lastdata[i].data || inputDataMap[i].isBigEnd != lastdata[i].isBigEnd) {
+                                console.log("有参数发生变化，保存到 session")
+                                break
+                            }
+                        }
+                    }
+                    param.lastdata = inputDataMap
+                }
+
+
+            }
+
 
             return ret
         }()

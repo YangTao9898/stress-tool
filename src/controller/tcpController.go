@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	go_logger "github.com/phachon/go-logger"
-	"net"
 	"os"
 	"stress-tool/comon/util"
 	"stress-tool/model"
@@ -24,6 +23,7 @@ var tcpTaskFileMap map[string]*model.SaveTcpTaskFileItem
 var tcpTaskFileArr []*model.SaveTcpTaskFileItem
 
 var tcpTestReturnConnMap map[string]model.TcpReturnTestConnStruct
+var tcpTestReturnConnMapLock sync.Mutex
 
 const (
 	tcpTaskFilePath    = "./web-template/save/tcpTask.txt"
@@ -395,44 +395,53 @@ END:
 		log.Error(ret.Msg)
 		return util.ResponseSuccPack(ret)
 	}
+	tcpTestReturnConnMapLock.Lock()
 	tcpTestReturnConnMap[uniqueKey] = connStruct
+	tcpTestReturnConnMapLock.Unlock()
 	ret.Msg = "连接成功"
 	ret.Result = true
 	return util.ResponseSuccPack(ret)
 }
 
-func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
+func getTcpTestReturnSession(c *gin.Context) (model.TcpReturnTestConnStruct, string, error) {
+	var nilStruct = model.TcpReturnTestConnStruct{}
 	value := util.GetSession(c, sessionName)
 	if value == nil {
-		return util.ResponseFailPack("没有进行连接不能断开")
+		return nilStruct, "", util.NewErrorf("session 不存在")
 	}
 
 	var errMsg string
 	uniqueKey, ok := value.(string)
 	if !ok {
-		errMsg = fmt.Sprintf("断开连接发生错误：value[%+v]类型转换异常", value)
+		errMsg = fmt.Sprintf("获取 session 发生错误：value[%+v]类型转换异常", value)
 		log.Error(errMsg)
-		return util.ResponseSuccPack(errMsg)
+		return nilStruct, "", util.NewErrorf(errMsg)
 	}
 
 	connStruct, ok := tcpTestReturnConnMap[uniqueKey]
 	if !ok {
-		errMsg = "断开连接发生错误：该连接不存在"
+		errMsg = "该 session 数据不存在"
+		log.Error(errMsg)
+		return nilStruct, "", util.NewErrorf(errMsg)
+	}
+	return connStruct, uniqueKey, nil
+}
+
+func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
+	var errMsg string
+	connStruct, uniqueKey, err := getTcpTestReturnSession(c)
+	if err != nil {
+		errMsg = "断开连接发生错误：" + err.Error()
 		log.Error(errMsg)
 		return util.ResponseFailPack(errMsg)
 	}
+
 	if connStruct.Conn == nil {
 		errMsg = "断开连接发生错误：连接为空"
 		log.Error(errMsg)
 		return util.ResponseFailPack(errMsg)
 	}
-	conn, ok := connStruct.Conn.(net.Conn)
-	if !ok {
-		errMsg = "断开连接发生错误：类型转换错误"
-		log.Error(errMsg)
-		return util.ResponseFailPack(errMsg)
-	}
-	err := conn.Close()
+	err = connStruct.Conn.Close()
 	if err != nil { // 该错误不影响断开连接
 		errMsg = "断开连接发生错误：" + err.Error()
 		log.Error(errMsg)
@@ -443,6 +452,63 @@ func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
 		log.Error(errMsg)
 		return util.ResponseSuccPack(errMsg)
 	}
+	// 删除 map 中的元素
+	tcpTestReturnConnMapLock.Lock()
+	delete(tcpTestReturnConnMap, uniqueKey)
+	tcpTestReturnConnMapLock.Unlock()
 
 	return util.ResponseSuccPack("断开连接成功")
+}
+
+// 删除请求数据队列，保存到 session
+func TcpTestReturnDeleteRequestQueue(request []byte, c *gin.Context) interface{} {
+	var errMsg string
+	connStruct, _, err := getTcpTestReturnSession(c)
+	if err != nil {
+		errMsg = "删除请求队列发生错误：" + err.Error()
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+	mapArrList := connStruct.DataMapArrList
+
+	var req model.NumberRequest
+	err = json.Unmarshal(request, &req)
+	if err != nil {
+		errMsg = "删除请求队列发生错误：" + err.Error()
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+
+	if mapArrList == nil || len(mapArrList) == 0 {
+		errMsg = "删除请求队列发生错误：session 数据为空，删除失败"
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+	// 删除指定索引的元素
+	mapArrList = append(mapArrList[:req.Num], mapArrList[req.Num+1:]...)
+
+	return util.ResponseSuccPack("删除请求队列成功")
+}
+
+// 更新请求数据队列的数据，保存到 session
+func TcpTestReturnRequestQueueUpdateData(request []byte, c *gin.Context) interface{} {
+	var errMsg string
+	connStruct, _, err := getTcpTestReturnSession(c)
+	if err != nil {
+		errMsg = "添加请求队列发生错误：" + err.Error()
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+	mapArrList := connStruct.DataMapArrList
+
+	var req model.RequestQueueUpdateDataRequest
+	err = json.Unmarshal(request, &req)
+	if err != nil {
+		errMsg = "创建请求队列发生错误：" + err.Error()
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+
+	mapArrList[req.QueueIndex] = req.DataMapArr
+	return util.ResponseSuccPack("更新请求数据队列的数据成功")
 }

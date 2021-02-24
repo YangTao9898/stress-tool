@@ -171,11 +171,14 @@ function inputDataNumEndClick(obj, classPrefix) {
  * @param classPrefix class 名称前缀
  * @returns {[]}
  */
-function getInputData(inputDataParentId, classPrefix) {
+function getInputData(inputDataParentId, classPrefix, showErrBox) {
     var cPrefix = "." + classPrefix
     var inputDataMap = []
     var inputDataParent = $("#" + inputDataParentId)
     var inputDataArr = $(inputDataParent).children(cPrefix + "input-data-top")
+    var ret = {}
+    ret.inputDataMap = null
+    ret.hasErr = true
     for (var i = 0; i < inputDataArr.length; i++) {
         var node = inputDataArr[i]
         var type = $(node).children(cPrefix + "input-data-type")[0].value
@@ -184,16 +187,25 @@ function getInputData(inputDataParentId, classPrefix) {
         var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0].checked
         var obj = {}
         if (type == "") {
-            $.showAlertBox("请检查", "数据类型不能为空", true)
-            return
+            ret.errMsg = "数据类型不能为空"
+            if (showErrBox == true) {
+                $.showAlertBox("请检查", "数据类型不能为空", true)
+            }
+            return ret
         }
         if (inputLength == "" && type != "2") {
-            $.showAlertBox("请检查", "数据长度不能为空", true)
-            return
+            ret.errMsg = "数据长度不能为空"
+            if (showErrBox == true) {
+                $.showAlertBox("请检查", "数据长度不能为空", true)
+            }
+            return ret
         }
         if (inputData == "") {
-            $.showAlertBox("请检查", "数据不能为空", true)
-            return
+            ret.errMsg = "数据不能为空"
+            if (showErrBox == true) {
+                $.showAlertBox("请检查", "数据不能为空", true)
+            }
+            return ret
         }
 
         obj.type = type
@@ -202,5 +214,7 @@ function getInputData(inputDataParentId, classPrefix) {
         obj.isBigEnd = isBigEnd
         inputDataMap.push(obj)
     }
-    return inputDataMap
+    ret.hasErr = false
+    ret.inputDataMap = inputDataMap
+    return ret
 }

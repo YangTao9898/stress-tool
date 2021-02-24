@@ -445,7 +445,11 @@
             var repeatTime = $("#repeatTime").val()
             var intervalTime = $("#intervalTime").val()
 
-            var inputDataMap = $.InputDataComponent.getInputData("input-data-parent", inputDataClassPrefix)
+            var inputDataRet = $.InputDataComponent.getInputData("input-data-parent", inputDataClassPrefix, true)
+            if (inputDataRet.hasErr) {
+                return
+            }
+            var inputDataMap = inputDataRet.inputDataMap
 
             var sendData = {
                 "targetAddress": targetAddress,
