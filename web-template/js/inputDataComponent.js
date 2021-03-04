@@ -8,6 +8,7 @@ $.InputDataComponent.inputDataFloatChose = inputDataFloatChose
 $.InputDataComponent.inputDataStringChose = inputDataStringChose
 $.InputDataComponent.inputDataNumEndClick = inputDataNumEndClick
 $.InputDataComponent.getInputData = getInputData
+$.InputDataComponent.setInputData = setInputData
 
 
 
@@ -217,4 +218,44 @@ function getInputData(inputDataParentId, classPrefix, showErrBox) {
     ret.hasErr = false
     ret.inputDataMap = inputDataMap
     return ret
+}
+
+/**
+ * 给输入组件设置值
+ * @param data [{"type":"", "length":"", "data":"", "isBigEnd":""}]
+ */
+function setInputData(parentId, classPrefix, data) {
+    var parentNode = $("#" + parentId)
+    parentNode.html("")
+
+    var cPrefix = "." + classPrefix
+    for (var i = 0, length = data.length; i < length; i++) {
+        var item = data[i]
+        parentNode.append($(getInputDataElement(classPrefix)))
+        var node = $(parentNode).children(cPrefix + "input-data-top")[i] // 获取到刚才新增的最后一个节点
+
+        var type = $(node).children(cPrefix + "input-data-type")[0]
+        var inputLength = $(node).find(cPrefix + "input-data-length")[0]
+        var inputData = $(node).find(cPrefix + "input-data-data")[0]
+        var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0]
+
+        switch(item.type) {
+            case "0":
+                $.InputDataComponent.inputDataIntChose(type, classPrefix)
+                break;
+            case "1":
+                $.InputDataComponent.inputDataFloatChose(type, classPrefix)
+                break;
+            case "2":
+                $.InputDataComponent.inputDataStringChose(type, classPrefix)
+                break;
+            default:
+                $.showAlertBox("错误", "未知数据类型", true);
+                return
+        }
+        inputLength.value = item.length
+        inputData.value = item.data
+        $(isBigEnd).prop("checked", item.isBigEnd)
+        $.InputDataComponent.inputDataNumEndClick(type, classPrefix)
+    }
 }

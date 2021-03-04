@@ -108,6 +108,8 @@ type SaveTaskIdArrStruct struct {
 type TcpReturnTestConnStruct struct {
 	Conn           net.Conn
 	IsConn         bool
+	Port           string
+	Address        string
 	DataMapArrList [][]InputDataMap `json:"dataMapArrList"` // 存储请求队列
 }
 
@@ -123,4 +125,11 @@ type NumberRequest struct {
 type RequestQueueUpdateDataRequest struct {
 	QueueIndex int            `json:"queueIndex"`
 	DataMapArr []InputDataMap `json:"dataMapArr"`
+}
+
+type TcpTestReturnGetRequestQueueResponse struct {
+	Address        string           `json:"address"`
+	Port           string           `json:"port"`
+	IsConn         bool             `json:"isConn"`
+	DataMapArrList [][]InputDataMap `json:"dataMapArrList"` // 存储请求队列
 }

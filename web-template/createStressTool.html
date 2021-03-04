@@ -371,36 +371,7 @@
             $("#intervalTime").val(data.intervalTime)
 
             var cPrefix = "." + inputDataClassPrefix
-            $("#input-data-parent").html("")
-            for (var i = 0, length = data.dataMapArr.length; i < length; i++) {
-                var item = data.dataMapArr[i]
-                $("#input-data-parent").append($(getInputDataElement(inputDataClassPrefix)))
-                var node = $(cPrefix + "input-data-top")[i] // 获取到刚才新增的最后一个节点
-
-                var type = $(node).children(cPrefix + "input-data-type")[0]
-                var inputLength = $(node).find(cPrefix + "input-data-length")[0]
-                var inputData = $(node).find(cPrefix + "input-data-data")[0]
-                var isBigEnd = $(node).find(cPrefix + "input-data-num-end")[0]
-
-                switch(item.type) {
-                    case "0":
-                        $.InputDataComponent.inputDataIntChose(type, inputDataClassPrefix)
-                        break;
-                    case "1":
-                        $.InputDataComponent.inputDataFloatChose(type, inputDataClassPrefix)
-                        break;
-                    case "2":
-                        $.InputDataComponent.inputDataStringChose(type, inputDataClassPrefix)
-                        break;
-                    default:
-                        $.showAlertBox("错误", "未知数据类型", true);
-                        return
-                }
-                inputLength.value = item.length
-                inputData.value = item.data
-                $(isBigEnd).prop("checked", item.isBigEnd)
-                $.InputDataComponent.inputDataNumEndClick(type, inputDataClassPrefix)
-            }
+            $.InputDataComponent.setInputData("input-data-parent", inputDataClassPrefix, data.dataMapArr)
         }
         function loadSaveTaskClick(saveTaskId) {
             $.loadingStart()

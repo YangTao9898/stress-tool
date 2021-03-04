@@ -22,7 +22,7 @@ var tcpTaskFileLock sync.Mutex
 var tcpTaskFileMap map[string]*model.SaveTcpTaskFileItem
 var tcpTaskFileArr []*model.SaveTcpTaskFileItem
 
-var tcpTestReturnConnMap map[string]model.TcpReturnTestConnStruct
+var tcpTestReturnConnMap map[string]*model.TcpReturnTestConnStruct
 var tcpTestReturnConnMapLock sync.Mutex
 
 const (
@@ -34,7 +34,7 @@ func init() {
 	log = util.GetLogger()
 	// 容量会自增长
 	TcpControllerMethodHandleMap = make(map[string]func([]byte, *gin.Context) interface{}, 0)
-	tcpTestReturnConnMap = make(map[string]model.TcpReturnTestConnStruct, 4)
+	tcpTestReturnConnMap = make(map[string]*model.TcpReturnTestConnStruct, 4)
 	// 增加的方法要注册到 TcpControllerMethodHandleMap 列表中
 	TcpControllerMethodHandleMap["/TestConnectivity"] = TestConnectivity
 	TcpControllerMethodHandleMap["/CreateTask"] = CreateTask
@@ -48,6 +48,9 @@ func init() {
 	TcpControllerMethodHandleMap["/DeleteSaveTask"] = DeleteSaveTask
 	TcpControllerMethodHandleMap["/TcpTestReturnConnect"] = TcpTestReturnConnect
 	TcpControllerMethodHandleMap["/TcpTestReturnDisconnect"] = TcpTestReturnDisconnect
+	TcpControllerMethodHandleMap["/TcpTestReturnDeleteRequestQueue"] = TcpTestReturnDeleteRequestQueue
+	TcpControllerMethodHandleMap["/TcpTestReturnRequestQueueUpdateData"] = TcpTestReturnRequestQueueUpdateData
+	TcpControllerMethodHandleMap["/TcpTestReturnGetRequestQueue"] = TcpTestReturnGetRequestQueue
 }
 
 // 如未初始化相关变量则初始化
@@ -353,9 +356,9 @@ func TcpTestReturnConnect(request []byte, c *gin.Context) interface{} {
 
 	// 查看连接是否存在
 	value := util.GetSession(c, sessionName)
-	var connStruct model.TcpReturnTestConnStruct
+	var connStruct *model.TcpReturnTestConnStruct
 	if value == nil {
-		connStruct = model.TcpReturnTestConnStruct{}
+		goto END
 	} else {
 		var ok bool
 		var uniqueKey string
@@ -381,8 +384,13 @@ END:
 		log.Error(ret.Msg)
 		return util.ResponseSuccPack(ret)
 	}
+	if connStruct == nil {
+		connStruct = &model.TcpReturnTestConnStruct{}
+	}
 	connStruct.Conn = conn
 	connStruct.IsConn = true
+	connStruct.Address = req.TargetAddress
+	connStruct.Port = req.TargetPort
 	uniqueKey, err := util.GetUniqueString("TcpTestReturnConnect-")
 	if err != nil {
 		ret.Msg = "创建连接发生错误：" + err.Error()
@@ -403,33 +411,30 @@ END:
 	return util.ResponseSuccPack(ret)
 }
 
-func getTcpTestReturnSession(c *gin.Context) (model.TcpReturnTestConnStruct, string, error) {
-	var nilStruct = model.TcpReturnTestConnStruct{}
+func getTcpTestReturnSession(c *gin.Context) (*model.TcpReturnTestConnStruct, string, error) {
 	value := util.GetSession(c, sessionName)
 	if value == nil {
-		return nilStruct, "", util.NewErrorf("session 不存在")
+		return nil, "", util.NewErrorf("session 不存在")
 	}
 
 	var errMsg string
 	uniqueKey, ok := value.(string)
 	if !ok {
 		errMsg = fmt.Sprintf("获取 session 发生错误：value[%+v]类型转换异常", value)
-		log.Error(errMsg)
-		return nilStruct, "", util.NewErrorf(errMsg)
+		return nil, "", util.NewErrorf(errMsg)
 	}
 
 	connStruct, ok := tcpTestReturnConnMap[uniqueKey]
 	if !ok {
 		errMsg = "该 session 数据不存在"
-		log.Error(errMsg)
-		return nilStruct, "", util.NewErrorf(errMsg)
+		return nil, "", util.NewErrorf(errMsg)
 	}
 	return connStruct, uniqueKey, nil
 }
 
 func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
 	var errMsg string
-	connStruct, uniqueKey, err := getTcpTestReturnSession(c)
+	connStruct, _, err := getTcpTestReturnSession(c)
 	if err != nil {
 		errMsg = "断开连接发生错误：" + err.Error()
 		log.Error(errMsg)
@@ -446,16 +451,15 @@ func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
 		errMsg = "断开连接发生错误：" + err.Error()
 		log.Error(errMsg)
 	}
-	err = util.DeleteSession(c, sessionName)
+	/*err = util.DeleteSession(c, sessionName)
 	if err != nil {
 		errMsg = fmt.Sprintf("断开连接发生错误：%s", err.Error())
 		log.Error(errMsg)
 		return util.ResponseSuccPack(errMsg)
-	}
-	// 删除 map 中的元素
-	tcpTestReturnConnMapLock.Lock()
-	delete(tcpTestReturnConnMap, uniqueKey)
-	tcpTestReturnConnMapLock.Unlock()
+	}*/
+	// 修改状态
+	connStruct.IsConn = false
+	connStruct.Conn = nil
 
 	return util.ResponseSuccPack("断开连接成功")
 }
@@ -485,7 +489,7 @@ func TcpTestReturnDeleteRequestQueue(request []byte, c *gin.Context) interface{}
 		return util.ResponseSuccPack(errMsg)
 	}
 	// 删除指定索引的元素
-	mapArrList = append(mapArrList[:req.Num], mapArrList[req.Num+1:]...)
+	connStruct.DataMapArrList = append(mapArrList[:req.Num], mapArrList[req.Num+1:]...)
 
 	return util.ResponseSuccPack("删除请求队列成功")
 }
@@ -499,6 +503,11 @@ func TcpTestReturnRequestQueueUpdateData(request []byte, c *gin.Context) interfa
 		log.Error(errMsg)
 		return util.ResponseFailPack(errMsg)
 	}
+	if connStruct == nil {
+		errMsg = "session信息不存在，请重新连接"
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
 	mapArrList := connStruct.DataMapArrList
 
 	var req model.RequestQueueUpdateDataRequest
@@ -509,6 +518,29 @@ func TcpTestReturnRequestQueueUpdateData(request []byte, c *gin.Context) interfa
 		return util.ResponseSuccPack(errMsg)
 	}
 
-	mapArrList[req.QueueIndex] = req.DataMapArr
+	if len(mapArrList) <= req.QueueIndex {
+		connStruct.DataMapArrList = append(mapArrList, req.DataMapArr)
+	} else {
+		mapArrList[req.QueueIndex] = req.DataMapArr
+	}
 	return util.ResponseSuccPack("更新请求数据队列的数据成功")
+}
+
+// 获取 session 中的请求数据队列
+func TcpTestReturnGetRequestQueue(request []byte, c *gin.Context) interface{} {
+	connStruct, _, err := getTcpTestReturnSession(c)
+	if err != nil {
+		log.Debugf("session 获取失败，不填充请求队列：" + err.Error())
+		return util.ResponseSuccPack(nil)
+	}
+	address := connStruct.Address
+	port := connStruct.Port
+	res := model.TcpTestReturnGetRequestQueueResponse{
+		Address:        address,
+		Port:           port,
+		IsConn:         connStruct.IsConn,
+		DataMapArrList: connStruct.DataMapArrList,
+	}
+
+	return util.ResponseSuccPack(res)
 }

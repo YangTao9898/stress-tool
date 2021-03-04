@@ -88,7 +88,7 @@
             const inputDataClassPrefix = "tcp-return-test-"
             const inputDataParentParentClassName = "ret-input-data-parent-parent"
             const retReqDataQueueBtnClassName = "ret-req-data-queue-btn"
-            const inputDataParentClass = "ret-inout-data-parent-class"
+            const inputDataParentClass = "ret-input-data-parent-class"
 
             var counter = 0
             ret.addInputDataQueue = function () {
@@ -148,8 +148,50 @@
             ret.deleteReqDataQueue = function (inputDataPid, retReqDataQueueBtnId) {
                 var retReqDataQueueBtn = $("#" + retReqDataQueueBtnId)
                 var prev = retReqDataQueueBtn.prev()
-                $("#" + inputDataPid).remove()
+
+                // 获得该对象
+                var thisNode = $("#" + inputDataPid)
+                // 获得所有节点的父对象数组
+                var pArr = $("." + inputDataParentParentClassName)
+                var length = pArr.length
+                var i = 0
+                for (; i < length; i++) {
+                    if (thisNode.attr("id") == $(pArr[i]).attr("id")) {
+                        break
+                    }
+                }
+                // 没在队列中找到传进来的元素
+                if (i >= length) {
+                    $.showAlertBox("错误", "在队列中未找到要删除的元素，请联系管理员", true)
+                    return
+                }
+                // 同步
+                $.loadingStart()
+                $.ajax({
+                    url: "/TcpTestReturnDeleteRequestQueue",
+                    type: "POST",
+                    data: JSON.stringify({
+                        "num": i
+                    }),
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            return
+                        }
+                        var msg = data.data
+                        //console.log("有参数发生变化，保存到 session：" + msg)
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+
+                thisNode.remove()
                 retReqDataQueueBtn.remove()
+                // 让前一个元素高亮
                 prev.find("button").click()
             }
 
@@ -386,6 +428,9 @@
                 $("#retTargetAddressErr").addClass("hidden")
                 $("#retTargetPortErr").addClass("hidden")
             }
+            ret.setConnState = function (isConn) {
+                $("#ret-conn-status-light").css("background-color", isConn ? "green" : "red")
+            }
             ret.connBtnClick = function () {
                 ret.hidConneErr()
                 var data = {}
@@ -418,7 +463,7 @@
                         var result = data.result
                         if (result) {
                             $.showAlertBox("成功", data.msg)
-                            $("#ret-conn-status-light").css("background-color", "green")
+                            ret.setConnState(true)
                         } else {
                             $.showAlertBox("失败", data.msg, true)
                         }
@@ -445,7 +490,7 @@
                         }
                         var msg = data.data
                         $.showAlertBox("成功", msg)
-                        $("#ret-conn-status-light").css("background-color", "red")
+                        ret.setConnState(false)
                     },
                     error: function (err) {
                         $.loadingEnd()
@@ -466,13 +511,14 @@
                 // 获得所有节点的父对象数组
                 var pArr = $("." + inputDataParentParentClassName)
                 var length = pArr.length
-                for (var i = 0; i < length; i++) {
-                    if (thisP == pArr[i]) {
+                var qi = 0
+                for (; qi < length; qi++) {
+                    if (thisP == pArr[qi]) {
                         break
                     }
                 }
                 // 没在队列中找到传进来的元素
-                if (i >= length) {
+                if (qi >= length) {
                     $.showAlertBox("错误", "在队列中未找到传进来的元素，请联系管理员", true)
                     return
                 }
@@ -482,33 +528,97 @@
                     return
                 }
                 var inputDataMap = inputDataRet.inputDataMap
-                console.log(param.lastdata)
+                //console.log(param.lastdata)
 
-                function sendSyncAjax() {
-                    
+                function sendSyncAjax(data) {
+                    $.loadingStart()
+                    $.ajax({
+                        url: "/TcpTestReturnRequestQueueUpdateData",
+                        type: "POST",
+                        data: JSON.stringify(data),
+                        dataType: "json",
+                        contentType: "application/json",
+                        success: function(data) {
+                            $.loadingEnd()
+                            if ($.checkResultErr(data)) {
+                                return
+                            }
+                            var msg = data.data
+                            //console.log("有参数发生变化，保存到 session：" + msg)
+                        },
+                        error: function (err) {
+                            $.loadingEnd()
+                            $.showRequestErr(err)
+                        }
+                    })
                 }
                 
                 if (inputDataMap != null) {
                     // 参数都正常，查看是否变化
                     if (JSON.stringify(lastdata) == '[]') {
-                        console.log("第一次，保存到 session")
+                        //console.log("第一次，保存到 session")
+                        var data = {}
+                        data.queueIndex = qi
+                        data.dataMapArr = inputDataMap
+                        sendSyncAjax(data)
                     } else {
                         for (var i = 0, length = inputDataMap.length; i < length; i++) {
-                            console.log(inputDataMap, lastdata)
+                            // console.log(inputDataMap, lastdata)
                             if (inputDataMap[i].type != lastdata[i].type || inputDataMap[i].length != lastdata[i].length ||
                                 inputDataMap[i].data != lastdata[i].data || inputDataMap[i].isBigEnd != lastdata[i].isBigEnd) {
-                                console.log("有参数发生变化，保存到 session")
+                                //console.log("有参数发生变化，保存到 session")
+                                var data = {}
+                                data.queueIndex = qi
+                                data.dataMapArr = inputDataMap
+                                //console.log(qi, data)
+                                sendSyncAjax(data)
                                 break
                             }
                         }
                     }
                     param.lastdata = inputDataMap
                 }
-
-
             }
-
-
+            // 加载 session 中的请求队列数据
+            ret.loadReqQueueData = function () {
+                $.loadingStart()
+                $.ajax({
+                    url: "/TcpTestReturnGetRequestQueue",
+                    type: "POST",
+                    data: null,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if (data.data == null || data.data == "") {
+                            return
+                        }
+                        data = data.data
+                        var address = data.address
+                        var port = data.port
+                        var isConn = data.isConn
+                        if (address != "" && port != "") {
+                            $("#retTargetAddress").val(address)
+                            $("#retTargetPort").val(port)
+                        }
+                        ret.setConnState(isConn)
+                        data = data.dataMapArrList
+                        for (var i = 0, length = data.length; i < length; i++) {
+                            ret.addInputDataQueue()
+                            var pArr = $("#ret-input-data-queue").children("." + inputDataParentParentClassName)
+                            var p = pArr[i]
+                            var pid = $($(p).children("." + inputDataParentClass)[0]).attr("id")
+                            var reqQueue = data[i]
+                            $.InputDataComponent.setInputData(pid, inputDataClassPrefix, reqQueue)
+                        }
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+            }
+            ret.loadReqQueueData()
             return ret
         }()
     </script>
