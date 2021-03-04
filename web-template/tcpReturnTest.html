@@ -134,8 +134,8 @@
                 param.node = sendQueueDataBtn
                 param.parentId = inputDataParentId
                 param.classPrefix = inputDataClassPrefix
-                param.lastdata = []
-                sendQueueDataBtn.bind("click", param, TcpReturnTest.saveRequestParam)
+                //sendQueueDataBtn.bind("click", param, TcpReturnTest.saveRequestParam)
+                ret.saveRequestParamEventBind(param)
             }
 
             ret.switchReqDataQueue = function(self, id) {
@@ -500,38 +500,9 @@
             }
 
             // 每当输出框变化时，保存该输出框所在的参数队列内容
-            ret.saveRequestParam = function (e) {
-                var param = e.data
-                var obj = param.node
-                var lastdata = param.lastdata
-                var parentId = param.parentId
-                var classPrefix = param.classPrefix
-                // 获得该对象的父亲节点
-                var thisP = $(obj).parents("." + inputDataParentParentClassName)[0]
-                // 获得所有节点的父对象数组
-                var pArr = $("." + inputDataParentParentClassName)
-                var length = pArr.length
-                var qi = 0
-                for (; qi < length; qi++) {
-                    if (thisP == pArr[qi]) {
-                        break
-                    }
-                }
-                // 没在队列中找到传进来的元素
-                if (qi >= length) {
-                    $.showAlertBox("错误", "在队列中未找到传进来的元素，请联系管理员", true)
-                    return
-                }
-                // 获得填写的数据
-                var inputDataRet = $.InputDataComponent.getInputData(parentId, classPrefix, true)
-                if (inputDataRet.hasErr) {
-                    return
-                }
-                var inputDataMap = inputDataRet.inputDataMap
-                //console.log(param.lastdata)
-
+            ret.saveRequestParamEventBind = function (param) {
                 function sendSyncAjax(data) {
-                    $.loadingStart()
+                    //$.loadingStart()
                     $.ajax({
                         url: "/TcpTestReturnRequestQueueUpdateData",
                         type: "POST",
@@ -539,7 +510,7 @@
                         dataType: "json",
                         contentType: "application/json",
                         success: function(data) {
-                            $.loadingEnd()
+                            //$.loadingEnd()
                             if ($.checkResultErr(data)) {
                                 return
                             }
@@ -547,37 +518,68 @@
                             //console.log("有参数发生变化，保存到 session：" + msg)
                         },
                         error: function (err) {
-                            $.loadingEnd()
+                            //$.loadingEnd()
                             $.showRequestErr(err)
                         }
                     })
                 }
-                
-                if (inputDataMap != null) {
-                    // 参数都正常，查看是否变化
-                    if (JSON.stringify(lastdata) == '[]') {
-                        //console.log("第一次，保存到 session")
-                        var data = {}
-                        data.queueIndex = qi
-                        data.dataMapArr = inputDataMap
-                        sendSyncAjax(data)
-                    } else {
-                        for (var i = 0, length = inputDataMap.length; i < length; i++) {
-                            // console.log(inputDataMap, lastdata)
-                            if (inputDataMap[i].type != lastdata[i].type || inputDataMap[i].length != lastdata[i].length ||
-                                inputDataMap[i].data != lastdata[i].data || inputDataMap[i].isBigEnd != lastdata[i].isBigEnd) {
-                                //console.log("有参数发生变化，保存到 session")
-                                var data = {}
-                                data.queueIndex = qi
-                                data.dataMapArr = inputDataMap
-                                //console.log(qi, data)
-                                sendSyncAjax(data)
-                                break
-                            }
+
+                var param = param
+                var obj = param.node
+                var parentId = param.parentId
+                var classPrefix = param.classPrefix
+
+                var lastdata = []
+
+                $.InputDataComponent.addBlurForDataChange(parentId, classPrefix, function () {
+                    // 获得该对象的父亲节点
+                    var thisP = $(obj).parents("." + inputDataParentParentClassName)[0]
+                    // 获得所有节点的父对象数组
+                    var pArr = $("." + inputDataParentParentClassName)
+                    var length = pArr.length
+                    var qi = 0
+                    for (; qi < length; qi++) {
+                        if (thisP == pArr[qi]) {
+                            break
                         }
                     }
-                    param.lastdata = inputDataMap
-                }
+                    // 没在队列中找到传进来的元素
+                    if (qi >= length) {
+                        throw "在队列中未找到传进来的元素，请联系管理员"
+                    }
+                    // 获得填写的数据
+                    var inputDataRet = $.InputDataComponent.getInputData(parentId, classPrefix, false)
+                    if (inputDataRet.hasErr) {
+                        return
+                    }
+                    var inputDataMap = inputDataRet.inputDataMap
+
+                    if (inputDataMap != null) {
+                        // 参数都正常，查看是否变化
+                        if (JSON.stringify(lastdata) == '[]') {
+                            //console.log("第一次，保存到 session")
+                            var data = {}
+                            data.queueIndex = qi
+                            data.dataMapArr = inputDataMap
+                            sendSyncAjax(data)
+                        } else {
+                            for (var i = 0, length = inputDataMap.length; i < length; i++) {
+                                // console.log(inputDataMap, lastdata)
+                                if (length != lastdata.length || inputDataMap[i].type != lastdata[i].type || inputDataMap[i].length != lastdata[i].length ||
+                                    inputDataMap[i].data != lastdata[i].data || inputDataMap[i].isBigEnd != lastdata[i].isBigEnd) {
+                                    //console.log("有参数发生变化，保存到 session")
+                                    var data = {}
+                                    data.queueIndex = qi
+                                    data.dataMapArr = inputDataMap
+                                    //console.log(qi, data)
+                                    sendSyncAjax(data)
+                                    break
+                                }
+                            }
+                        }
+                        lastdata = inputDataMap
+                    }
+                })
             }
             // 加载 session 中的请求队列数据
             ret.loadReqQueueData = function () {

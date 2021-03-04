@@ -336,6 +336,21 @@ func DeleteSaveTask(request []byte, c *gin.Context) interface{} {
 
 const sessionName = "TCP_RETURN_TEST_TCP_CONN_SESSION"
 
+func createSession(connStruct *model.TcpReturnTestConnStruct, c *gin.Context) error {
+	uniqueKey, err := util.GetUniqueString("TcpTestReturnConnect-")
+	if err != nil {
+		return util.WrapError("创建session发生错误", err)
+	}
+	err = util.SetSession(c, sessionName, uniqueKey)
+	if err != nil {
+		return util.WrapError("创建session发生错误", err)
+	}
+	tcpTestReturnConnMapLock.Lock()
+	tcpTestReturnConnMap[uniqueKey] = connStruct
+	tcpTestReturnConnMapLock.Unlock()
+	return nil
+}
+
 func TcpTestReturnConnect(request []byte, c *gin.Context) interface{} {
 	ret := model.TcpTestReturnConnectResponse{
 		Msg:    "",
@@ -391,21 +406,14 @@ END:
 	connStruct.IsConn = true
 	connStruct.Address = req.TargetAddress
 	connStruct.Port = req.TargetPort
-	uniqueKey, err := util.GetUniqueString("TcpTestReturnConnect-")
+
+	err = createSession(connStruct, c)
 	if err != nil {
 		ret.Msg = "创建连接发生错误：" + err.Error()
 		log.Error(ret.Msg)
 		return util.ResponseSuccPack(ret)
 	}
-	err = util.SetSession(c, sessionName, uniqueKey)
-	if err != nil {
-		ret.Msg = "创建连接发生错误：" + err.Error()
-		log.Error(ret.Msg)
-		return util.ResponseSuccPack(ret)
-	}
-	tcpTestReturnConnMapLock.Lock()
-	tcpTestReturnConnMap[uniqueKey] = connStruct
-	tcpTestReturnConnMapLock.Unlock()
+
 	ret.Msg = "连接成功"
 	ret.Result = true
 	return util.ResponseSuccPack(ret)
@@ -414,7 +422,7 @@ END:
 func getTcpTestReturnSession(c *gin.Context) (*model.TcpReturnTestConnStruct, string, error) {
 	value := util.GetSession(c, sessionName)
 	if value == nil {
-		return nil, "", util.NewErrorf("session 不存在")
+		return nil, "", nil
 	}
 
 	var errMsg string
@@ -435,6 +443,11 @@ func getTcpTestReturnSession(c *gin.Context) (*model.TcpReturnTestConnStruct, st
 func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
 	var errMsg string
 	connStruct, _, err := getTcpTestReturnSession(c)
+	if connStruct == nil {
+		errMsg = "断开连接发生错误：session 不存在"
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
 	if err != nil {
 		errMsg = "断开连接发生错误：" + err.Error()
 		log.Error(errMsg)
@@ -468,6 +481,10 @@ func TcpTestReturnDisconnect(request []byte, c *gin.Context) interface{} {
 func TcpTestReturnDeleteRequestQueue(request []byte, c *gin.Context) interface{} {
 	var errMsg string
 	connStruct, _, err := getTcpTestReturnSession(c)
+	if connStruct == nil {
+		log.Debugf("session 不存在，无法删除请求数据队列")
+		return util.ResponseSuccPack(nil)
+	}
 	if err != nil {
 		errMsg = "删除请求队列发生错误：" + err.Error()
 		log.Error(errMsg)
@@ -498,6 +515,16 @@ func TcpTestReturnDeleteRequestQueue(request []byte, c *gin.Context) interface{}
 func TcpTestReturnRequestQueueUpdateData(request []byte, c *gin.Context) interface{} {
 	var errMsg string
 	connStruct, _, err := getTcpTestReturnSession(c)
+	if connStruct == nil {
+		log.Infof("session 为空，创建 session, ip: [%s]", c.Request.Host)
+		err = createSession(&model.TcpReturnTestConnStruct{}, c)
+		if err != nil {
+			errMsg = "创建连接发生错误：" + err.Error()
+			log.Error(errMsg)
+			return util.ResponseFailPack(errMsg)
+		}
+		connStruct, _, err = getTcpTestReturnSession(c)
+	}
 	if err != nil {
 		errMsg = "添加请求队列发生错误：" + err.Error()
 		log.Error(errMsg)

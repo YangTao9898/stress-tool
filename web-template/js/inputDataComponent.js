@@ -9,6 +9,7 @@ $.InputDataComponent.inputDataStringChose = inputDataStringChose
 $.InputDataComponent.inputDataNumEndClick = inputDataNumEndClick
 $.InputDataComponent.getInputData = getInputData
 $.InputDataComponent.setInputData = setInputData
+$.InputDataComponent.addBlurForDataChange = addBlurForDataChange
 
 
 
@@ -68,14 +69,16 @@ function getInputDataElement(itemClassPrefix) {
                 <div class="input-group input-group-lg top-pad-1">
                     ` + "<!-- 数据 -->" + `
                     <button style="display: inline-block;"
-                        class="btn btn-default btn-lg" onclick="deleteElement(this)">删除</button>
+                        class="btn btn-default btn-lg ` + itemClassPrefix + `input-data-delete-btn" onclick="deleteElement(this)">删除</button>
                 </div>
             </div>
         </div>`
 }
 
 function deleteElement(obj) {
-    $(obj.parentNode.parentNode.parentNode).remove()
+    setTimeout(function () { // 保证 on 事件先于此事件触发
+        $(obj.parentNode.parentNode.parentNode).remove()
+    }, 50)
 }
 
 function inputDataIntChose(obj, classPrefix) {
@@ -93,7 +96,7 @@ function inputDataIntChose(obj, classPrefix) {
 
     var inputData = $(p).find(cprefix + "input-data-data")[0]
     //$(inputData).unbind('input', computeBytes)
-    $(inputData).unbind('blur')
+    $(inputData).unbind('blur', stringInputBlur)
 }
 
 function inputDataFloatChose(obj, classPrefix) {
@@ -111,7 +114,7 @@ function inputDataFloatChose(obj, classPrefix) {
 
     var inputData = $(p).find(cprefix + "input-data-data")[0]
     //$(inputData).unbind('input', computeBytes)
-    $(inputData).unbind('blur')
+    $(inputData).unbind('blur', stringInputBlur)
 }
 
 /*function computeBytes(event) {
@@ -125,6 +128,28 @@ function inputDataFloatChose(obj, classPrefix) {
     //console.log(atob(data))
     $(objlength).val()
 }*/
+function stringInputBlur(e) {
+    var param = e.data
+    var lastValue = param.lastValue
+    var inputLength = param.inputLength
+    var inputData = param.inputData
+
+    // input值未变时，不发送请求
+    if (lastValue != inputData.value || $(inputLength).val() == "") {
+        param.lastValue = inputData.value
+        $.ajax({
+            url: "/GetStrBytes",
+            type: "POST",
+            data: inputData.value,
+            success: function(data) {
+                $(inputLength).val(data)
+            },
+            error: function (err) {
+                $.showRequestErr(err)
+            }
+        })
+    }
+}
 function inputDataStringChose(obj, classPrefix) {
     var cprefix = "." + classPrefix
     var p = $(obj).parents(cprefix + "input-data-top")[0]
@@ -140,23 +165,11 @@ function inputDataStringChose(obj, classPrefix) {
 
     var inputData = $(p).find(cprefix + "input-data-data")[0]
     var lastValue = inputData.value
-    $(inputData).bind('blur', function () {
-        // input值未变时，不发送请求
-        if (lastValue != inputData.value || $(inputLength).val() == "") {
-            lastValue = inputData.value
-            $.ajax({
-                url: "/GetStrBytes",
-                type: "POST",
-                data: inputData.value,
-                success: function(data) {
-                    $(inputLength).val(data)
-                },
-                error: function (err) {
-                    $.showRequestErr(err)
-                }
-            })
-        }
-    })
+    var param = {}
+    param.lastValue = inputData.value
+    param.inputLength = inputLength
+    param.inputData = inputData
+    $(inputData).bind('blur', param, stringInputBlur)
 }
 
 function inputDataNumEndClick(obj, classPrefix) {
@@ -170,6 +183,7 @@ function inputDataNumEndClick(obj, classPrefix) {
  * 返回输入的数据
  * @param inputDataParentId 父节点id
  * @param classPrefix class 名称前缀
+ * @param showErrBox bool 检查错误是否弹出错误框
  * @returns {[]}
  */
 function getInputData(inputDataParentId, classPrefix, showErrBox) {
@@ -258,4 +272,19 @@ function setInputData(parentId, classPrefix, data) {
         $(isBigEnd).prop("checked", item.isBigEnd)
         $.InputDataComponent.inputDataNumEndClick(type, classPrefix)
     }
+}
+
+function addBlurForDataChange(parentId, classPrefix, fn) {
+    var parentNode = $("#" + parentId)
+
+    var cPrefix = "." + classPrefix
+    var inputDataSelect = cPrefix + "input-data-data"
+    var isBigEndsSelect = cPrefix + "input-data-num-end"
+    var deleteBtnsSelect = cPrefix + "input-data-delete-btn"
+
+    $(parentNode).on("blur", inputDataSelect, fn)
+    $(parentNode).on("click", isBigEndsSelect, fn)
+    // 作为定时器的原因是，onclick 删除事件会比 on 先执行，on 事件就会被移除，
+    // 但是 on 在删除事件之前执行的话，此方法会没有效果，所以弄个定时器，不让事件消失，同时又在 onclick 后执行
+    $(parentNode).on("click", deleteBtnsSelect, function() {setTimeout(fn, 100)})
 }
