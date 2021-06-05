@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	go_logger "github.com/phachon/go-logger"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"stress-tool/comon/util"
 	"stress-tool/src/controller"
 )
@@ -55,6 +57,11 @@ func loadHttpInterface(router *gin.Engine) {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "%s 9090(listen port) to run\n", os.Args[0])
+		return
+	}
+
 	router := gin.Default()
 	// 静态资源
 	router.StaticFS("/web-template/lib/", http.Dir("web-template/lib/"))
@@ -78,5 +85,8 @@ func main() {
 	// 批量监听 Controller 中的方法
 	loadHttpInterface(router)
 
-	router.Run(":8080")
+	err := router.Run(":" + os.Args[1])
+	if err != nil {
+		fmt.Printf("listen %s fail, cause: %s\n", os.Args[1], err.Error())
+	}
 }
