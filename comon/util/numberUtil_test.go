@@ -141,12 +141,24 @@ func TestBytesToBinaryString(t *testing.T) {
 	})
 
 	for _, v := range testcases {
-		res := BytesToBinaryString(v.bytes)
+		res := BytesToBinaryString(v.bytes, false)
 		t.Logf("testcase [%+v] expect [%s], get [%s]", v.bytes, v.expectRes, res)
 		if res != v.expectRes {
 			t.Error("fail")
 		}
 	}
+}
+
+func TestBinaryStringToBytes(t *testing.T) {
+	inbs := []byte{123, 127, 127}
+	bstr := BytesToBinaryString(inbs, true)
+	t.Logf("bstr: %s", bstr)
+	bs, err := BinaryStringToBytes(bstr)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("%+v", bs)
 }
 
 func TestGetUniqueString(t *testing.T) {

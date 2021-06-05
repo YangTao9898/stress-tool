@@ -9,7 +9,7 @@ import (
 	"stress-tool/src/controller"
 )
 
-const errMsgKey = "A mistake seems to have happened, cause"
+const errMsgKey = "A mistake happened, cause"
 
 var log *go_logger.Logger
 
@@ -20,7 +20,17 @@ func init() {
 	log = util.GetLogger()
 	loadHttpHandleMethodMap = make(map[string]func([]byte, *gin.Context) interface{}, 10)
 	// 注册 Controller 中的方法
-	util.MapMerge(loadHttpHandleMethodMap, controller.TcpControllerMethodHandleMap)
+	mapMerge(loadHttpHandleMethodMap, controller.TcpControllerMethodHandleMap)
+}
+
+// 将 sourceMap 合并到 targetMap 中
+func mapMerge(targetMap, sourceMap map[string]func([]byte, *gin.Context) interface{}) {
+	for k, v := range sourceMap {
+		if _, _ok := targetMap[k]; _ok {
+			panic("k [" + k + "] in map already exist")
+		}
+		targetMap[k] = v
+	}
 }
 
 func loadHttpInterface(router *gin.Engine) {
@@ -33,7 +43,7 @@ func loadHttpInterface(router *gin.Engine) {
 			if e != nil {
 				log.Errorf(e.Error())
 				c.JSON(http.StatusInternalServerError, gin.H{
-					errMsgKey: "s",
+					errMsgKey: e.Error(),
 				})
 			}
 			// 执行 handle 方法

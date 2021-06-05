@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"stress-tool/model"
 )
 
 func listen() {
@@ -66,8 +65,8 @@ func main() {
 	fmt.Println(s1)*/
 	// []byte 转 数字
 
-	ch := make(chan model.TaskDealData)
-	close(ch)
-	i := <-ch
-	fmt.Printf("%+v", i)
+	bs := []byte("gbk哈哈哈哈哈哈哈哈")
+	for _, v := range bs {
+		fmt.Printf("%02X|", v)
+	}
 }

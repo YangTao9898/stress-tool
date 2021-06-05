@@ -18,6 +18,192 @@ func init() {
 }
 
 /**
+ * 将 DataMap 转为 byte 数组
+ * return []byte 转换的数据，string 错误码，error 错误，map[string]int dataTypeMap 数据类型映射，[]bool isBigEndArr 大小端映射
+ */
+func DataMapToBytes(DataMapArr []model.InputDataMap) ([]byte, string, []map[string]int, []bool, error) {
+	var resCode = ""
+	var errMsg = ""
+	var resErr error
+	databytes := bytes.NewBuffer([]byte{})
+	if len(DataMapArr) == 0 {
+		resCode += "1019"
+		return nil, resCode, nil, nil, util.NewErrorf("DataMapArr 没有任何元素")
+	}
+	dataMapArr := DataMapArr
+	dataTypeMap := make([]map[string]int, len(dataMapArr))
+	isBigEndArr := make([]bool, len(dataMapArr))
+	num := 0
+	for index, v := range dataMapArr {
+		lengthStr := v.Length
+		data := v.Data
+		isBigEnd := v.IsBigEnd
+		isBigEndArr[index] = isBigEnd
+		tn, err := strconv.Atoi(v.Type)
+		if err != nil {
+			resCode += "1080"
+			errMsg = "转换失败"
+			resErr = err
+			goto err
+		}
+
+		var length int
+		if tn == 2 {
+			length = len(data)
+		} else {
+			length, err = strconv.Atoi(lengthStr)
+			if err != nil {
+				resCode += "1020"
+				errMsg = "转换失败"
+				resErr = err
+				goto err
+			}
+		}
+
+		end := num + length - 1
+		m := make(map[string]int, 1)
+		m[strconv.Itoa(num)+"~"+strconv.Itoa(end)] = tn
+		dataTypeMap[index] = m
+		num = end + 1
+		switch tn {
+		case model.NUMBER:
+			switch length {
+			case 1:
+				dataInt, err := strconv.ParseInt(data, 10, 8)
+				if err != nil {
+					resCode += "1030"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, int8(dataInt))
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, int8(dataInt))
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			case 2:
+				dataInt, err := strconv.ParseInt(data, 10, 16)
+				if err != nil {
+					resCode += "1031"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, int16(dataInt))
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, int16(dataInt))
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			case 4:
+				dataInt, err := strconv.ParseInt(data, 10, 32)
+				if err != nil {
+					resCode += "1032"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, int32(dataInt))
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, int32(dataInt))
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			case 8:
+				dataInt, err := strconv.ParseInt(data, 10, 64)
+				if err != nil {
+					resCode += "1033"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, dataInt)
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, dataInt)
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			default:
+				resCode += "1040"
+				errMsg = fmt.Sprintf("int类型不支持的长度[%d]", length)
+				resErr = err
+				goto err
+			}
+
+		case model.FLOAT:
+			switch length {
+			case 4:
+				dataFloat, err := strconv.ParseFloat(data, 32)
+				if err != nil {
+					resCode += "1050"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, float32(dataFloat))
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, float32(dataFloat))
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			case 8:
+				dataFloat, err := strconv.ParseFloat(data, 64)
+				if err != nil {
+					resCode += "1051"
+					errMsg = "转换失败"
+					resErr = err
+					goto err
+				}
+				if isBigEnd {
+					err = binary.Write(databytes, binary.BigEndian, dataFloat)
+				} else {
+					err = binary.Write(databytes, binary.LittleEndian, dataFloat)
+				}
+				if err != nil {
+					log.Error(err.Error())
+				}
+			default:
+				resCode += "1060"
+				errMsg = fmt.Sprintf("float类型不支持的长度[%d]", length)
+				resErr = err
+				goto err
+			}
+		case model.STRING:
+			length = len(data)
+			bytes := []byte(data)
+			_, err := databytes.Write(bytes)
+			if err != nil {
+				log.Error(err.Error())
+			}
+		default:
+			resCode += "1080"
+			errMsg = "错误的类型"
+			resErr = err
+			goto err
+		}
+	}
+	return databytes.Bytes(), "", dataTypeMap, isBigEndArr, nil
+
+err:
+	if resErr != nil {
+		return nil, resCode, nil, nil, fmt.Errorf("%s: %s", errMsg, resErr.Error())
+	} else {
+		return nil, resCode, nil, nil, fmt.Errorf("%s", errMsg)
+	}
+}
+
+/**
  * CreateTaskData 返回值
  * resCode string 错误码，为空则没错误
  */
@@ -82,150 +268,10 @@ func CheckToCreateTaskData(req model.CreateTaskRequest) (res model.CreateTaskDat
 		}
 	}
 
-	if len(req.DataMapArr) == 0 {
-		resCode += "1019"
+	databytes, tmpResCode, dataTypeMap, isBigEndArr, err := DataMapToBytes(req.DataMapArr)
+	resCode += tmpResCode
+	if err != nil {
 		return
-	}
-	dataMapArr := req.DataMapArr
-	databytes := bytes.NewBuffer([]byte{})
-	dataTypeMap := make([]map[string]int, len(dataMapArr))
-	isBigEndArr := make([]bool, len(dataMapArr))
-	num := 0
-	for index, v := range dataMapArr {
-		lengthStr := v.Length
-		data := v.Data
-		isBigEnd := v.IsBigEnd
-		isBigEndArr[index] = isBigEnd
-		tn, err := strconv.Atoi(v.Type)
-		if err != nil {
-			resCode += "1080"
-			return
-		}
-
-		var length int
-		if tn == 2 {
-			length = len(data)
-		} else {
-			length, err = strconv.Atoi(lengthStr)
-			if err != nil {
-				resCode += "1020"
-				return
-			}
-		}
-
-		end := num + length - 1
-		m := make(map[string]int, 1)
-		m[strconv.Itoa(num)+"~"+strconv.Itoa(end)] = tn
-		dataTypeMap[index] = m
-		num = end + 1
-		switch tn {
-		case model.NUMBER:
-			switch length {
-			case 1:
-				dataInt, err := strconv.ParseInt(data, 10, 8)
-				if err != nil {
-					resCode += "1030"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, int8(dataInt))
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, int8(dataInt))
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			case 2:
-				dataInt, err := strconv.ParseInt(data, 10, 16)
-				if err != nil {
-					resCode += "1031"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, int16(dataInt))
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, int16(dataInt))
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			case 4:
-				dataInt, err := strconv.ParseInt(data, 10, 32)
-				if err != nil {
-					resCode += "1032"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, int32(dataInt))
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, int32(dataInt))
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			case 8:
-				dataInt, err := strconv.ParseInt(data, 10, 64)
-				if err != nil {
-					resCode += "1033"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, dataInt)
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, dataInt)
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			default:
-				resCode += "1040"
-				return
-			}
-
-		case model.FLOAT:
-			switch length {
-			case 4:
-				dataFloat, err := strconv.ParseFloat(data, 32)
-				if err != nil {
-					resCode += "1050"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, float32(dataFloat))
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, float32(dataFloat))
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			case 8:
-				dataFloat, err := strconv.ParseFloat(data, 64)
-				if err != nil {
-					resCode += "1051"
-					return
-				}
-				if isBigEnd {
-					err = binary.Write(databytes, binary.BigEndian, dataFloat)
-				} else {
-					err = binary.Write(databytes, binary.LittleEndian, dataFloat)
-				}
-				if err != nil {
-					log.Error(err.Error())
-				}
-			default:
-				resCode += "1060"
-			}
-		case model.STRING:
-			length = len(data)
-			bytes := []byte(data)
-			_, err := databytes.Write(bytes)
-			if err != nil {
-				log.Error(err.Error())
-			}
-		default:
-			resCode += "1080"
-			return
-		}
 	}
 
 	res = model.CreateTaskData{
@@ -241,7 +287,7 @@ func CheckToCreateTaskData(req model.CreateTaskRequest) (res model.CreateTaskDat
 		HasResponse:   req.HasResponse,
 		DataTypeMap:   dataTypeMap,
 		IsBigEnd:      isBigEndArr,
-		Data:          databytes.Bytes(),
+		Data:          databytes,
 	}
 
 	return
@@ -433,12 +479,12 @@ func TaskDealDataToGetTaskDetailResponse(data model.TaskDealData) (model.GetTask
 			}
 			length := n2 - n1 + 1
 			if length <= 0 {
-				return res, errors.New(fmt.Sprintf("[%s] connot less [%s]", n2, n1))
+				return res, errors.New(fmt.Sprintf("[%s] cannot less [%s]", n2, n1))
 			}
 			dataBytes := data.Data[n1 : n2+1]
 			dataMapArr[index].Type = strconv.Itoa(dataType)
 			dataMapArr[index].Length = strconv.Itoa(length)
-			dataMapArr[index].BinaryData = util.BytesToBinaryString(dataBytes)
+			dataMapArr[index].BinaryData = util.BytesToBinaryString(dataBytes, true)
 			dataMapArr[index].ByteData = util.BytesToByteString(dataBytes)
 			dataMapArr[index].Data, err = byteToDataString(dataBytes, dataType, length, data.IsBigEnd[index])
 			dataMapArr[index].IsBigEnd = data.IsBigEnd[index]
@@ -505,4 +551,70 @@ func ToDescFromSaveTcpTaskFileItem(item []*model.SaveTcpTaskFileItem) []model.Sa
 		resArr = append(resArr, desc)
 	}
 	return resArr
+}
+
+/**
+ * 将二进制数据转为对应的类型的字符串
+ */
+func ConvertBytesByType(bs []byte, valType string) (string, error) {
+	var err error
+	var resStr string
+	var endian binary.ByteOrder
+	switch valType {
+	case "0": // 二进制显示
+		return util.BytesToBinaryString(bs, true), nil
+	case "1": // int大端
+		endian = binary.BigEndian
+		fallthrough
+	case "2": // int小端
+		if valType == "2" {
+			endian = binary.LittleEndian
+		}
+		buf := bytes.NewBuffer(bs)
+		switch len(bs) {
+		case 1:
+			var n int8
+			err = binary.Read(buf, endian, &n)
+			resStr = strconv.FormatInt(int64(n), 10)
+		case 2:
+			var n int16
+			err = binary.Read(buf, endian, &n)
+			resStr = strconv.FormatInt(int64(n), 10)
+		case 4:
+			var n int32
+			err = binary.Read(buf, endian, &n)
+			resStr = strconv.FormatInt(int64(n), 10)
+		case 8:
+			var n int64
+			err = binary.Read(buf, endian, &n)
+			resStr = strconv.FormatInt(n, 10)
+		default:
+			return "", util.NewErrorf("int类型不支持的长度[%d]", len(bs))
+		}
+	case "3": // float大端
+		endian = binary.BigEndian
+		fallthrough
+	case "4": // float小段
+		if valType == "4" {
+			endian = binary.LittleEndian
+		}
+		buf := bytes.NewBuffer(bs)
+		switch len(bs) {
+		case 4:
+			var f float32
+			err = binary.Read(buf, binary.BigEndian, &f)
+			resStr = strconv.FormatFloat(float64(f), 'f', -1, 32)
+		case 8:
+			var f float64
+			err = binary.Read(buf, binary.BigEndian, &f)
+			resStr = strconv.FormatFloat(f, 'f', -1, 64)
+		default:
+			return "", util.NewErrorf("float类型不支持的长度[%d]", len(bs))
+		}
+	case "5": // 字符串
+		resStr = string(bs)
+	default:
+		return "", fmt.Errorf("不支持的数据类型[%s]", valType)
+	}
+	return resStr, err
 }

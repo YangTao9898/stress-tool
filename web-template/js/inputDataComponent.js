@@ -10,6 +10,7 @@ $.InputDataComponent.inputDataNumEndClick = inputDataNumEndClick
 $.InputDataComponent.getInputData = getInputData
 $.InputDataComponent.setInputData = setInputData
 $.InputDataComponent.addBlurForDataChange = addBlurForDataChange
+$.InputDataComponent.getErrMsgByErrCode = getErrMsgByErrCode
 
 
 
@@ -54,7 +55,7 @@ function getInputDataElement(itemClassPrefix) {
                 <div class="input-group input-group-lg top-pad-1">
                     ` + "<!-- 数据 -->" + `
                     <span class="input-group-addon left-margin-1">数据<span class="must-fill">*</span></span>
-                    <input type="text" class="form-control ` + itemClassPrefix + `input-data-data" name="Data" aria-describedby="sizing-addon1">
+                    <textarea type="text" class="form-control ` + itemClassPrefix + `input-data-data" name="Data" aria-describedby="sizing-addon1"></textarea>
                 </div>
             </div>
             ` + "<!-- 大小端 -->" + `
@@ -279,12 +280,37 @@ function addBlurForDataChange(parentId, classPrefix, fn) {
 
     var cPrefix = "." + classPrefix
     var inputDataSelect = cPrefix + "input-data-data"
+    var inputDataLength = cPrefix + "input-data-length"
     var isBigEndsSelect = cPrefix + "input-data-num-end"
     var deleteBtnsSelect = cPrefix + "input-data-delete-btn"
 
     $(parentNode).on("blur", inputDataSelect, fn)
+    $(parentNode).on("blur", inputDataLength, fn)
     $(parentNode).on("click", isBigEndsSelect, fn)
     // 作为定时器的原因是，onclick 删除事件会比 on 先执行，on 事件就会被移除，
     // 但是 on 在删除事件之前执行的话，此方法会没有效果，所以弄个定时器，不让事件消失，同时又在 onclick 后执行
     $(parentNode).on("click", deleteBtnsSelect, function() {setTimeout(fn, 100)})
+}
+
+function getErrMsgByErrCode(errCode) {
+    switch (errCode) {
+        case "1019":
+            return "请求数据不能为空，请至少添加一条请求数据"
+        case "1020":
+            return "数据长度有非法字符"
+        case "1030":
+        case "1031":
+        case "1032":
+        case "1033":
+            return "数据为Int类型时，数据含有非法字符或值溢出"
+        case "1040":
+            return "数据为Int类型时，数据长度只能为1，2，4，8"
+        case "1050":
+        case "1051":
+            return "数据为Float类型时，数据含有非法字符或值溢出"
+        case "1060":
+            return "数据为Float类型时，数据长度只能为4，8"
+        case "1080":
+            return "未定义的数据类型，请联系管理员"
+    }
 }

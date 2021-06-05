@@ -111,6 +111,7 @@ type TcpReturnTestConnStruct struct {
 	Port           string
 	Address        string
 	DataMapArrList [][]InputDataMap `json:"dataMapArrList"` // 存储请求队列
+	Bytes          []byte           // 存储的服务端返回的数据
 }
 
 type TcpTestReturnConnectResponse struct {
@@ -132,4 +133,22 @@ type TcpTestReturnGetRequestQueueResponse struct {
 	Port           string           `json:"port"`
 	IsConn         bool             `json:"isConn"`
 	DataMapArrList [][]InputDataMap `json:"dataMapArrList"` // 存储请求队列
+}
+
+type TcpTestReturnSendRequestRequest struct {
+	TcpConnRequest
+	DataMapArr []InputDataMap `json:"dataMapArr"`
+}
+
+type TcpTestReturnSendRequestResponse struct {
+	BinaryStr string `json:"binaryStr"`
+	ErrMsg    string `json:"errMsg"`
+}
+
+type TcpTestReturnConvertRequest struct {
+	BinaryString   string `json:"binaryString"`
+	ConvertTypeArr []struct {
+		Type   string `json:"type"`
+		Length int    `json:"length"`
+	} `json:"convertTypeArr"`
 }

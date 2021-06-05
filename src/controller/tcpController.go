@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	go_logger "github.com/phachon/go-logger"
+	"net"
 	"os"
 	"stress-tool/comon/util"
 	"stress-tool/model"
 	"stress-tool/src/convert"
 	"stress-tool/src/tcp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,8 +28,9 @@ var tcpTestReturnConnMap map[string]*model.TcpReturnTestConnStruct
 var tcpTestReturnConnMapLock sync.Mutex
 
 const (
-	tcpTaskFilePath    = "./web-template/save/tcpTask.txt"
-	tcpTaskTmpFilePath = "./web-template/save/.tcpTask.tmp.txt"
+	tcpTaskFilePath                          = "./web-template/save/tcpTask.txt"
+	tcpTaskTmpFilePath                       = "./web-template/save/.tcpTask.tmp.txt"
+	TcpTestReturnSendRequestWaitResponseTime = 3000 // ms
 )
 
 func init() {
@@ -51,6 +54,8 @@ func init() {
 	TcpControllerMethodHandleMap["/TcpTestReturnDeleteRequestQueue"] = TcpTestReturnDeleteRequestQueue
 	TcpControllerMethodHandleMap["/TcpTestReturnRequestQueueUpdateData"] = TcpTestReturnRequestQueueUpdateData
 	TcpControllerMethodHandleMap["/TcpTestReturnGetRequestQueue"] = TcpTestReturnGetRequestQueue
+	TcpControllerMethodHandleMap["/TcpTestReturnSendRequest"] = TcpTestReturnSendRequest
+	TcpControllerMethodHandleMap["/BinaryConvert"] = BinaryConvert
 }
 
 // 如未初始化相关变量则初始化
@@ -339,15 +344,41 @@ const sessionName = "TCP_RETURN_TEST_TCP_CONN_SESSION"
 func createSession(connStruct *model.TcpReturnTestConnStruct, c *gin.Context) error {
 	uniqueKey, err := util.GetUniqueString("TcpTestReturnConnect-")
 	if err != nil {
-		return util.WrapError("创建session发生错误", err)
+		goto err
 	}
 	err = util.SetSession(c, sessionName, uniqueKey)
 	if err != nil {
-		return util.WrapError("创建session发生错误", err)
+		goto err
 	}
 	tcpTestReturnConnMapLock.Lock()
 	tcpTestReturnConnMap[uniqueKey] = connStruct
 	tcpTestReturnConnMapLock.Unlock()
+	return nil
+err:
+	log.Error("创建session发生错误，如存在连接则关闭连接：" + err.Error())
+	if connStruct.IsConn {
+		err := connStruct.Conn.Close()
+		if err != nil {
+			log.Error("关闭连接失败：" + err.Error())
+		} else {
+			log.Info("关闭连接成功")
+		}
+	}
+	return util.WrapError("创建session发生错误", err)
+}
+
+func createConn(connStruct *model.TcpReturnTestConnStruct, targetAddress, targetPort string) error {
+	conn, err := tcp.TcpConn(targetAddress, targetPort)
+	if err != nil {
+		return util.WrapError("连接失败", err)
+	}
+	if connStruct == nil {
+		return util.NewErrorf("参数 connStruct 不能为空")
+	}
+	connStruct.Conn = conn
+	connStruct.IsConn = true
+	connStruct.Address = targetAddress
+	connStruct.Port = targetPort
 	return nil
 }
 
@@ -393,19 +424,15 @@ func TcpTestReturnConnect(request []byte, c *gin.Context) interface{} {
 	}
 
 END:
-	conn, err := tcp.TcpConn(req.TargetAddress, req.TargetPort)
-	if err != nil {
-		ret.Msg = "创建连接发生错误：" + err.Error()
-		log.Error(ret.Msg)
-		return util.ResponseSuccPack(ret)
-	}
 	if connStruct == nil {
 		connStruct = &model.TcpReturnTestConnStruct{}
 	}
-	connStruct.Conn = conn
-	connStruct.IsConn = true
-	connStruct.Address = req.TargetAddress
-	connStruct.Port = req.TargetPort
+	err = createConn(connStruct, req.TargetAddress, req.TargetPort)
+	if err != nil {
+		ret.Msg = "创建连接发生错误：" + err.Error()
+		log.Error(ret.Msg)
+		return util.ResponseFailPack(ret.Msg)
+	}
 
 	err = createSession(connStruct, c)
 	if err != nil {
@@ -560,6 +587,10 @@ func TcpTestReturnGetRequestQueue(request []byte, c *gin.Context) interface{} {
 		log.Debugf("session 获取失败，不填充请求队列：" + err.Error())
 		return util.ResponseSuccPack(nil)
 	}
+	if connStruct == nil {
+		log.Debugf("session 不存在，不填充请求队列")
+		return util.ResponseSuccPack(nil)
+	}
 	address := connStruct.Address
 	port := connStruct.Port
 	res := model.TcpTestReturnGetRequestQueueResponse{
@@ -570,4 +601,148 @@ func TcpTestReturnGetRequestQueue(request []byte, c *gin.Context) interface{} {
 	}
 
 	return util.ResponseSuccPack(res)
+}
+
+// 测试返回界面发送请求到目标主机
+func TcpTestReturnSendRequest(request []byte, c *gin.Context) interface{} {
+	var errMsg string
+	var req model.TcpTestReturnSendRequestRequest
+	err := json.Unmarshal(request, &req)
+	if err != nil {
+		errMsg = util.GetErrorStack("参数转换错误", err)
+		log.Error(errMsg)
+		return util.ResponseSuccPack(errMsg)
+	}
+	m := tcp.TcpConnRequestCheckParam(req.TcpConnRequest)
+	if m != "" {
+		return util.ResponsePack(m, "", nil)
+	}
+
+	connStruct, _, err := getTcpTestReturnSession(c)
+	if err != nil || connStruct == nil || !connStruct.IsConn {
+		errMsg = "没有 session 连接信息，将建立连接"
+		log.Info(errMsg)
+
+		if connStruct == nil {
+			connStruct = &model.TcpReturnTestConnStruct{}
+		}
+
+		err = createConn(connStruct, req.TargetAddress, req.TargetPort)
+		if err != nil {
+			errMsg = util.GetErrorStack("创建连接发生错误", err)
+			log.Error(errMsg)
+			return util.ResponseFailPack(errMsg)
+		}
+
+		err = createSession(connStruct, c)
+		if err != nil {
+			errMsg = util.GetErrorStack("创建连接发生错误", err)
+			log.Error(errMsg)
+			return util.ResponseSuccPack(errMsg)
+		}
+	}
+
+	bytes, resCode, _, _, err := convert.DataMapToBytes(req.DataMapArr)
+	if err != nil {
+		return util.ResponsePack(resCode, err.Error(), nil)
+	}
+
+	_, err = connStruct.Conn.Write(bytes)
+	if err != nil {
+		connStruct.Conn.Close()
+		connStruct.IsConn = false
+		return util.ResponseFailPack("发送数据失败，请重新建立连接再试：" + err.Error())
+	}
+
+	err = connStruct.Conn.SetReadDeadline(time.Now().Add(time.Duration(TcpTestReturnSendRequestWaitResponseTime * 1e6)))
+	if err != nil {
+		connStruct.Conn.Close()
+		connStruct.IsConn = false
+		return util.ResponseFailPack("设置读取超时时间失败：" + err.Error())
+	}
+
+	res := model.TcpTestReturnSendRequestResponse{}
+	connStruct.Bytes = nil
+	for {
+		buf := make([]byte, 1024)
+		rdn, err := connStruct.Conn.Read(buf)
+		connStruct.Bytes = append(connStruct.Bytes, buf[:rdn]...)
+		if err != nil {
+			if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+				// 根据读超时时间自动断开的连接，不算错误
+			} else {
+				res.ErrMsg = err.Error()
+			}
+			break
+		}
+	}
+
+	// 将 byte 发送到前端界面
+	if len(connStruct.Bytes) > 0 {
+		res.BinaryStr = util.BytesToBinaryString(connStruct.Bytes, true)
+	} else {
+		return util.ResponseSuccPack(gin.H{
+			"errMsg": "没有收到服务端发来的任何消息",
+		})
+	}
+
+	return util.ResponseSuccPack(res)
+}
+
+func BinaryConvert(request []byte, c *gin.Context) interface{} {
+	var req model.TcpTestReturnConvertRequest
+	var errMsg string
+	var retStr string
+
+	err := json.Unmarshal(request, &req)
+	if err != nil {
+		errMsg = util.GetErrorStack("参数转换错误", err)
+		log.Error(errMsg)
+		return util.ResponseFailPack(errMsg)
+	}
+
+	if strings.TrimSpace(req.BinaryString) == "" {
+		return util.ResponseFailPack("返回数据为空，不能够解析数据")
+	}
+
+	bytes, err := util.BinaryStringToBytes(req.BinaryString)
+	if err != nil {
+		return util.ResponseFailPack("解析二进制数据错误, 原因：" + err.Error())
+	}
+	var index int
+	length := len(bytes)
+	finish := false
+	for _, v := range req.ConvertTypeArr {
+		// 长度校验，int和float需要校验
+		next := index + v.Length
+		if v.Length > length {
+			next = length
+			finish = true
+			switch v.Type {
+			case "1":
+				fallthrough
+			case "2":
+				if v.Length != 1 && v.Length != 2 && v.Length != 4 && v.Length != 8 {
+					return util.ResponseFailPack(fmt.Sprintf("int类型不支持的长度[%d]", v.Length))
+				}
+			case "3":
+				fallthrough
+			case "4":
+				if v.Length != 4 && v.Length != 8 {
+					return util.ResponseFailPack(fmt.Sprintf("float类型不支持的长度[%d]", v.Length))
+				}
+			}
+		}
+		str, err := convert.ConvertBytesByType(bytes[index:next], v.Type)
+		if err != nil {
+			return util.ResponseFailPack("转换二进制数据失败，错误原因：" + err.Error())
+		}
+		index = next
+		retStr += str
+		if finish {
+			break
+		}
+	}
+
+	return util.ResponseSuccPack(retStr)
 }

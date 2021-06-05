@@ -133,7 +133,7 @@ $.maskRemove = function () {
  */
 $.checkResultErr = function (data) {
     if (data.resultCode == "500") {
-        $.showAlertBox("服务器出错，请稍后访问", "错误原因：" + data.errMsg, true, null, null)
+        $.showAlertBox("错误", "错误原因：" + data.errMsg, true, null, null)
     }
     return data == null || data.resultCode != "0000"
 }

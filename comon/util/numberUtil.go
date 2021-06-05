@@ -5,10 +5,29 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 	"time"
 	"unicode"
 )
+
+const (
+	zero = byte('0')
+	one  = byte('1')
+)
+
+var uint8arr [8]uint8
+
+func init() {
+	uint8arr[0] = 128
+	uint8arr[1] = 64
+	uint8arr[2] = 32
+	uint8arr[3] = 16
+	uint8arr[4] = 8
+	uint8arr[5] = 4
+	uint8arr[6] = 2
+	uint8arr[7] = 1
+}
 
 // 判断一个字符串是否为整数
 func IsInteger(str string) bool {
@@ -78,12 +97,57 @@ func ByteToMB(b int) string {
 	}
 }
 
-func BytesToBinaryString(bs []byte) string {
+/**
+ * isSpaceSplite 是否每八位用空格隔开
+ */
+func BytesToBinaryString(bs []byte, isSpaceSplite bool) string {
 	buf := bytes.NewBuffer([]byte{})
-	for _, v := range bs {
+	length := len(bs)
+	for i, v := range bs {
 		buf.WriteString(fmt.Sprintf("%08b", v))
+		if isSpaceSplite && i < length-1 {
+			buf.WriteString(" ")
+		}
 	}
 	return buf.String()
+}
+
+var zeroOneReg = regexp.MustCompile(`[^01]`)
+var spaceReg = regexp.MustCompile("\\s+")
+
+func BinaryStringToBytes(binaryStr string) (res []byte, retErr error) {
+	binaryStr = spaceReg.ReplaceAllString(binaryStr, "")
+	if len(binaryStr) == 0 {
+		return res, nil
+	}
+
+	invalidStr := zeroOneReg.FindString(binaryStr)
+	if "" != invalidStr {
+		return res, fmt.Errorf("contains invalid char '%s'", invalidStr)
+	}
+
+	l := len(binaryStr)
+
+	mo := l % 8
+	l /= 8
+	if mo != 0 {
+		l++
+	}
+	res = make([]byte, 0, l)
+	mo = 8 - mo
+	var n uint8
+	for i, b := range []byte(binaryStr) {
+		m := (i + mo) % 8
+		switch b {
+		case one:
+			n += uint8arr[m]
+		}
+		if m == 7 {
+			res = append(res, n)
+			n = 0
+		}
+	}
+	return
 }
 
 func BytesToByteString(bs []byte) []string {

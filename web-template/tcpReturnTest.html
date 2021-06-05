@@ -7,7 +7,7 @@
                 <input type="text" class="form-control" id="retTargetAddress" aria-describedby="sizing-addon1">
             </div>
         </div>
-        <div class="left-margin-1" style="display: inline-block; max-width: 20%">
+        <div class="left-margin-1" style="display: inline-block; max-width: 30%">
             <div class="input-group input-group-lg top-pad-1">
                 <span class="input-group-addon" >测试机器端口<span class="must-fill">*</span></span>
                 <span class="input-group-addon error hidden" id="retTargetPortErr">error</span>
@@ -39,29 +39,35 @@
         <div id="ret-input-data-queue" style="min-height: 120px;">
         </div>
         <div class="input-group input-group-lg top-pad-2">
-            <span class="input-group-addon" id="sizing-addon1">错误信息</span>
-            <input type="text" class="form-control" placeholder="" aria-describedby="sizing-addon1">
+            <span class="input-group-addon" id="sizing-addon1">提示信息</span>
+            <input type="text" class="form-control" id="ret-err-msg" placeholder="" aria-describedby="sizing-addon1" style="color: red;">
         </div>
         <div class="input-group input-group-lg top-pad-1">
             <span class="input-group-addon" id="sizing-addon1">返回数据</span>
-            <textarea class="form-control" placeholder="" aria-describedby="sizing-addon1" style="height: 70px;"></textarea>
+            <textarea class="form-control" placeholder="" id="ret-response-data" aria-describedby="sizing-addon1" style="height: 70px;"></textarea>
         </div>
         <div class="top-pad-1">
             <div class="input-group input-group-lg" style="display: inline-block;">
-                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(4)">二进制</button>
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(0)">二进制</button>
             </div>
             <div class="input-group input-group-lg" style="display: inline-block;">
                 <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(1)">int</button>
             </div>
             <div class="input-group input-group-lg" style="display: inline-block;">
-                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(2)">float</button>
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(2)">int小端</button>
             </div>
             <div class="input-group input-group-lg" style="display: inline-block;">
-                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(3)">字符串</button>
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(3)">float</button>
             </div>
-            <div class="input-group input-group-lg" id="ret-delete-type-area-div" style="display: inline-block; margin-left: 40px; width: 200px; height: 100px;
+            <div class="input-group input-group-lg" style="display: inline-block;">
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(4)">float小端</button>
+            </div>
+            <div class="input-group input-group-lg" style="display: inline-block;">
+                <button class="btn btn-default btn-lg" onclick="TcpReturnTest.addItem(5)">字符串</button>
+            </div>
+            <div class="input-group input-group-lg" id="ret-delete-type-area-div" style="display: inline-block; margin-left: 40px; width: 320px; height: 100px;
                         border-radius: 10px;">
-                <div style="height: 100%; padding-top: 20px; text-align: center;">拖拽到此处删除<br>(通过拖拽可以改变顺序)</div>
+                <div style="height: 100%; padding-top: 20px; text-align: center;">点击左边的按钮可选择转化格式，拖拽到此处删除<br>(通过拖拽可以改变顺序，输入框中填入长度，单位byte)字符串内容是中文只支持utf编码</div>
             </div>
             <div class="input-group input-group-lg" style="display: inline-block;">
                 <button class="btn btn-default btn-lg" onclick="TcpReturnTest.clearAllItems()">清除全部转换类型</button>
@@ -75,11 +81,11 @@
         <!-- 转化结果 -->
         <div class="input-group input-group-lg top-pad-2">
             <div class="down-arrow" style="display: inline-block;"></div>
-            <button class="btn btn-default btn-lg left-margin-2" onclick="TcpReturnTest">开始转换</button>
+            <button class="btn btn-default btn-lg left-margin-2" onclick="TcpReturnTest.startConvertBtnClick()">开始转换</button>
         </div>
         <div class="input-group input-group-lg top-pad-2">
             <span class="input-group-addon" id="sizing-addon1">转化结果</span>
-            <textarea class="form-control" placeholder="" aria-describedby="sizing-addon1" style="height: 70px;"></textarea>
+            <textarea class="form-control" id="ret-convert-result" placeholder="" aria-describedby="sizing-addon1" style="height: 70px;"></textarea>
         </div>
     </div>
     <script>
@@ -134,8 +140,8 @@
                 param.node = sendQueueDataBtn
                 param.parentId = inputDataParentId
                 param.classPrefix = inputDataClassPrefix
-                //sendQueueDataBtn.bind("click", param, TcpReturnTest.saveRequestParam)
                 ret.saveRequestParamEventBind(param)
+                sendQueueDataBtn.bind("click", param, TcpReturnTest.sendQueueDataBtnClick)
             }
 
             ret.switchReqDataQueue = function(self, id) {
@@ -143,6 +149,65 @@
                 $("#" + id).show(400)
                 $("." + retReqDataQueueBtnClassName).find("button").css("background-color", "#F5FFF0")
                 $(self).css("background-color", "#A2FF7E")
+            }
+
+            ret.sendQueueDataBtnClick = function(e) {
+                var param = e.data
+                var parentId = param.parentId
+                var classPrefix = param.classPrefix
+                var inputDataRet = $.InputDataComponent.getInputData(parentId, classPrefix, false)
+                if (inputDataRet.hasErr) {
+                    return
+                }
+                var inputDataMap = inputDataRet.inputDataMap
+                var requestParam = {}
+                requestParam.dataMapArr = inputDataMap
+                requestParam.targetAddress = $("#retTargetAddress").val()
+                requestParam.targetPort = $("#retTargetPort").val()
+
+                if (inputDataMap == null || inputDataMap.length == 0) {
+                    $.showAlertBox("错误", "请添加要发送的数据", true)
+                    return
+                }
+
+                $.loadingStart()
+                $.ajax({
+                    url: "/TcpTestReturnSendRequest",
+                    type: "POST",
+                    data: JSON.stringify(requestParam),
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            var strs = data.resultCode.split(",")
+                            for (var i = 0, len = strs.length; i < len; i++) {
+                                if (strs[i] == "1001") {
+                                    $("#retTargetAddressErr").text("不能为空")
+                                    $("#retTargetAddressErr").removeClass("hidden")
+                                }
+                                if (strs[i] == "1002") {
+                                    $("#retTargetPortErr").text("不能为空")
+                                    $("#retTargetPortErr").removeClass("hidden")
+                                }
+                            }
+                            if (data.errMsg != "") {
+                                $.showAlertBox("错误", "错误原因：" + data.errMsg, true)
+                            }
+                            return
+                        }
+                        data = data.data
+                        var binaryStr = data.binaryStr
+                        var errMsg = data.errMsg
+                        $("#ret-err-msg").val(errMsg)
+                        $("#ret-response-data").val(binaryStr)
+                        $("#ret-convert-result").val("")
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
             }
             
             ret.deleteReqDataQueue = function (inputDataPid, retReqDataQueueBtnId) {
@@ -338,17 +403,23 @@
             ret.addItem = function (type) {
                 var name = ""
                 switch (type) {
+                    case 0:
+                        name = "二进制"
+                        break
                     case 1:
                         name = "int"
                         break
                     case 2:
-                        name = "float"
+                        name = "int小端"
                         break
                     case 3:
-                        name = "字符串"
+                        name = "float"
                         break
                     case 4:
-                        name = "二进制"
+                        name = "float小端"
+                        break
+                    case 5:
+                        name = "字符串"
                         break
                     default:
                         console.error("not support type: " + type)
@@ -358,12 +429,14 @@
                 var node = `
                     <div class="input-group input-group-lg ret-type-format" id="` + uniqueId + `"
                             style="position: absolute; width: ` + perItemWitdh + `px;">
+                        <input type="hidden" class="ret-convert-type"/>
                         <span class="input-group-addon">` + name + `</span>
-                        <input type="text" class="form-control" aria-describedby="sizing-addon1" placeholder="length">
+                        <input type="text" class="form-control ret-convert-length" aria-describedby="sizing-addon1" placeholder="length">
                     </div>
                 `
                 $("#ret-res-origin-data").append($(node))
                 var appendNode = $("#" + uniqueId)
+                $(appendNode).find(".ret-convert-type").val(type)
                 // 可拖拽
                 ret.addDraggable(appendNode)
                 if (nextLeft + perItemWitdh + transverseSeparationDistance >= containerWidth) {
@@ -375,7 +448,12 @@
                 appendNode.css("top", nextTop + "px")
                 appendNode.css("left", nextLeft + "px")
                 nextLeft += perItemWitdh + transverseSeparationDistance
+                return appendNode
             }
+            // 默认转为字符串
+            let appendRetTypeFormatNode = ret.addItem(5)
+            // 设置长度
+            appendRetTypeFormatNode.find(".ret-convert-length").val("99999")
 
             ret.clearAllItems = function () {
                 $("#ret-res-origin-data").html("")
@@ -499,6 +577,47 @@
                 })
             }
 
+            ret.startConvertBtnClick = function(){
+                let convertNodeArr = $("#ret-res-origin-data").find(".ret-type-format")
+                let typeArr = []
+                for (var i = 0, length = convertNodeArr.length; i < length; i++) {
+                    var tmp = $(convertNodeArr[i])
+                    var convertType = tmp.find(".ret-convert-type").val()
+                    var convertLength = tmp.find(".ret-convert-length").val()
+                    if (!/^\d+$/.test(convertLength)) {
+                        $.showAlertBox("错误", "请在类型后面的长度输入库框输入数字，[" + convertLength + "]不是数字", true)
+                        return
+                    }
+                    let convertLengthInt = parseInt(convertLength)
+                    typeArr.push({
+                        "type": convertType,
+                        "length": convertLengthInt
+                    })
+                }
+                $.loadingStart()
+                $.ajax({
+                    url: "/BinaryConvert",
+                    type: "POST",
+                    data: JSON.stringify({
+                        "binaryString": $("#ret-response-data").val(),
+                        "convertTypeArr": typeArr
+                    }),
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data) {
+                        $.loadingEnd()
+                        if ($.checkResultErr(data)) {
+                            return
+                        }
+                        $("#ret-convert-result").val(data.data)
+                    },
+                    error: function (err) {
+                        $.loadingEnd()
+                        $.showRequestErr(err)
+                    }
+                })
+            }
+
             // 每当输出框变化时，保存该输出框所在的参数队列内容
             ret.saveRequestParamEventBind = function (param) {
                 function sendSyncAjax(data) {
@@ -605,13 +724,15 @@
                         }
                         ret.setConnState(isConn)
                         data = data.dataMapArrList
-                        for (var i = 0, length = data.length; i < length; i++) {
-                            ret.addInputDataQueue()
-                            var pArr = $("#ret-input-data-queue").children("." + inputDataParentParentClassName)
-                            var p = pArr[i]
-                            var pid = $($(p).children("." + inputDataParentClass)[0]).attr("id")
-                            var reqQueue = data[i]
-                            $.InputDataComponent.setInputData(pid, inputDataClassPrefix, reqQueue)
+                        if (data != null && data != undefined) {
+                            for (var i = 0, length = data.length; i < length; i++) {
+                                ret.addInputDataQueue()
+                                var pArr = $("#ret-input-data-queue").children("." + inputDataParentParentClassName)
+                                var p = pArr[i]
+                                var pid = $($(p).children("." + inputDataParentClass)[0]).attr("id")
+                                var reqQueue = data[i]
+                                $.InputDataComponent.setInputData(pid, inputDataClassPrefix, reqQueue)
+                            }
                         }
                     },
                     error: function (err) {

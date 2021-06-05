@@ -503,27 +503,8 @@
                                 $("#intervalTimeErr").text("非法字符或数字超出范围")
                                 $("#intervalTimeErr").removeClass("hidden")
                             }
-                            if (strs[i] == "1019") {
-                                $.showAlertBox("错误", "请求数据不能为空，请至少添加一条请求数据", true)
-                            }
-                            if (strs[i] == "1020") {
-                                $.showAlertBox("错误", "数据长度有非法字符", true)
-                            }
-                            if (strs[i] == "1030" || strs[i] == "1031" || strs[i] == "1032" || strs[i] == "1033") {
-                                $.showAlertBox("错误", "数据为Int类型时，数据含有非法字符或值溢出", true)
-                            }
-                            if (strs[i] == "1040") {
-                                $.showAlertBox("错误", "数据为Int类型时，数据长度只能为1，2，4，8", true)
-                            }
-                            if (strs[i] == "1050" || strs[i] == "1051") {
-                                $.showAlertBox("错误", "数据为Float类型时，数据含有非法字符或值溢出", true)
-                            }
-                            if (strs[i] == "1060") {
-                                $.showAlertBox("错误", "数据为Float类型时，数据长度只能为4，8", true)
-                            }
-                            if (strs[i] == "1080") {
-                                $.showAlertBox("错误", "未定义的数据类型，请联系管理员", true)
-                            }
+                            var errMsg = $.InputDataComponent.getErrMsgByErrCode(strs[i])
+                            $.showAlertBox("错误", errMsg, true)
                         }
                         return
                     }
