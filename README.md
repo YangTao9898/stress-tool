@@ -11,7 +11,7 @@
 
 `go build -o stress_tool.exe main.go`
 
-`./stress_tool.exe 8080`
+`stress_tool.exe 8080`
 ##### 2. linux or macos
 `cd stress-tool `
 
@@ -33,6 +33,6 @@
 
 `cd stress-tool/test`
 
-`go build -o mockTcpServer mockTcpServer.go`
+`go build -o mockTcpServer.exe mockTcpServer.go`
 
-`./mockTcpServer 8888`
+`mockTcpServer.exe 8888`
