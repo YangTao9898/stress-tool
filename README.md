@@ -5,21 +5,21 @@
 
 #### 安装使用教程
 
-#####需要安装go环境，如果不想自己打包，也可以直接下载打包完后的包
-#####1. windows
+##### 需要安装go环境，如果不想自己打包，也可以直接下载打包完后的包
+##### 1. windows
 `cd stress-tool `
 
 `go build -o stress_tool.exe main.go`
 
 `./stress_tool.exe 8080`
-#####2. linux or macos
+##### 2. linux or macos
 `cd stress-tool `
 
 `go build -o stress_tool main.go`
 
 `./stress_tool 8080`
 
-###界面访问
+### 界面访问
 浏览器输入 ip:8080 即可访问压测界面
 
 #### 使用说明
@@ -28,7 +28,7 @@
 2.  查看压测任务用于查看压测结果
 3.  TCP返回测试界面用于测试TCP接口
 
-####服务端模拟程序说明
+#### 服务端模拟程序说明
 本项目附带一个tcp服务端的模拟程序，接收到什么输入，就会返回什么输出，安装使用教程如下
 
 `cd stress-tool/test`
